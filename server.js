@@ -1,12 +1,10 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { CLIENT_ID, CLIENT_SECRET } from './public/env.js';
 import fetch from 'node-fetch';
 import mysql from 'mysql2';
-import dotenv from 'dotenv';
-
-dotenv.config();
+const CLIENT_ID = process.env.APP_CLIENT_ID;
+const CLIENT_SECRET = process.env.APP_CLIENT_SECRET;
 
 const app = express();
 const PORT = 8000;

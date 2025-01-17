@@ -1,4 +1,4 @@
-import { CLIENT_ID } from './env.js';
+const CLIENT_ID = process.env.APP_CLIENT_ID;
 
 async function addTimeToTheDatbase(hash, time) {
     const response = await fetch('http://localhost:8000/add-time', {
