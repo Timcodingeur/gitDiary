@@ -6,7 +6,6 @@ on:
     branches:
       - main
 
-
 jobs:
   # 1) AUDIT
   audit:
@@ -30,7 +29,7 @@ jobs:
       - name: Audit
         run: npm audit
 
- # 2) TEST E2E (avec matrice)
+  # 2) TEST E2E (avec matrice + service Docker MySQL)
   test_e2e:
     name: "E2E Tests"
     runs-on: ubuntu-latest
@@ -39,12 +38,33 @@ jobs:
       matrix:
         browser: [chrome, edge]
 
+    # On déclare ici le service MySQL
+    services:
+      mysql:
+        image: mysql:latest
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    # Variables d'environnement pour ce job
+    env:
+      CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+      CLIENT_SECRET: ${{ secrets.APP_CLIENT_SECRET }}
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD}}
+      DB_NAME: ${{ secrets.DB_NAME}}
+      DB_PORT: ${{ secrets.DB_PORT}}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      env:
-        CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
-        CLIENT_SECRET: ${{ secrets.APP_CLIENT_SECRET }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -56,7 +76,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Ici, on laisse Cypress Action gérer le "start" et le "wait-on" :
+      - name: Wait for MySQL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+          until mysqladmin ping -h 127.0.0.1 --port=3306 --user=root --password=root --silent; do
+            echo "Waiting for MySQL..."
+            sleep 5
+          done
+          echo "MySQL is up"
+
+      - name: Create database
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS db_git;"
+
       - name: Run Cypress E2E tests on ${{ matrix.browser }}
         uses: cypress-io/github-action@v6
         with:
@@ -65,7 +98,6 @@ jobs:
           wait-on: http://localhost:8000
           wait-on-timeout: 60
           config: baseUrl=http://localhost:8000
-
 
   # 3) DEPLOY (dépend des tests e2e)
   deploy:
@@ -87,19 +119,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-
       - name: Deploy to Hostinger
         uses: easingthemes/ssh-deploy@v2.1.5
         with:
           source: "public/"
           target: ${{ secrets.HOSTINGER_TARGET }}
-          # IP / domaine SSH
           remote_host: ${{ secrets.HOSTINGER_HOST }}
-          # Utilisateur SSH
           remote_user: ${{ secrets.HOSTINGER_USER }}
-          # Clé SSH privée
           ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # Port SSH (22 par défaut). Si Hostinger te donne un autre port, paramètre-le :
           remote_port: ${{ secrets.HOSTINGER_REMOTE_PORT }}
-          # Options rsync, --delete pour supprimer les anciens fichiers côté serveur
           args: "-rltgoDzvO --delete"
