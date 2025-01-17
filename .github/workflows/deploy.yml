@@ -1,1 +1,95 @@
+name: Deploy to Hostinger
+run-name: ${{ github.actor }} is running the CI/CD 🚀
 
+on:
+  push:
+    branches:
+      - main
+
+
+jobs:
+  # 1) AUDIT
+  audit:
+    name: "Audit Dependencies"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit
+        run: npm audit
+
+  # 2) TEST E2E (dépend de l'audit)
+  test_e2e:
+    name: "E2E Tests"
+    runs-on: ubuntu-latest
+    needs: [audit]
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start app in background
+
+        run: npm start &
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+  # 3) DEPLOY (dépend des tests e2e)
+  deploy:
+    name: "Deploy to Hostinger"
+    runs-on: ubuntu-latest
+    needs: [test_e2e]
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+
+      - name: Deploy to Hostinger
+        uses: easingthemes/ssh-deploy@v2.1.5
+        with:
+          source: "public/"
+          target: ${{ secrets.HOSTINGER_TARGET }}
+          # IP / domaine SSH
+          remote_host: ${{ secrets.HOSTINGER_HOST }}
+          # Utilisateur SSH
+          remote_user: ${{ secrets.HOSTINGER_USER }}
+          # Clé SSH privée
+          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # Port SSH (22 par défaut). Si Hostinger te donne un autre port, paramètre-le :
+          remote_port: ${{ secrets.HOSTINGER_REMOTE_PORT }}
+          # Options rsync, --delete pour supprimer les anciens fichiers côté serveur
+          args: "-rltgoDzvO --delete"
