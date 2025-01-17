@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>GitHub OAuth App</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+      
+        <!-- Scripts JSPDF et autoTable -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.1/jspdf.umd.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
+        <script src="script.js" type="module"></script>
+      
+        <style>
+          /* Palette inspirée de GitHub */
+          :root {
+            --color-bg: #f6f8fa;
+            --color-bg-table: #ffffff;
+            --color-border: #e1e4e8;
+            --color-text: #24292e;
+            --color-text-secondary: #586069;
+            --color-hover: #e1e4e8;
+            --color-btn-bg: #2ea44f;
+            --color-btn-bg-hover: #2c974b;
+            --color-btn-text: #ffffff;
+          }
+      
+          body {
+            font-family: Arial, sans-serif;
+          }
+      
+          .container {
+            margin: 20px;
+          }
+      
+          h1 {
+            margin-bottom: 1rem;
+          }
+      
+          select {
+            padding: 0.4rem;
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+          }
+      
+          button {
+            cursor: pointer;
+            padding: 10px 20px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border: none;
+            background-color: var(--color-btn-bg);
+            color: var(--color-btn-text);
+            font-size: 1rem;
+            margin-right: 1rem;
+          }
+      
+          button:hover {
+            background-color: var(--color-btn-bg-hover);
+          }
+      
+          table {
+            width: 100%;
+            margin-top: 1rem;
+            border-collapse: collapse;
+            background-color: var(--color-bg-table);
+            border: 1px solid var(--color-border);
+          }
+      
+          th, td {
+            border: 1px solid var(--color-border);
+            padding: 8px;
+            text-align: left;
+          }
+      
+          th {
+            background-color: var(--color-bg-table);
+            font-weight: 600;
+          }
+      
+          tr:nth-child(even) {
+            background-color: var(--color-hover);
+          }
+      
+          tr:hover {
+            background-color: var(--color-hover);
+          }
+
+          div.day-commits {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid var(--color-border);
+            background-color: var(--color-bg-table);
+          }
+      
+          h2 {
+            background-color: var(--color-bg-table);
+            padding: 10px;
+            margin: 0;
+          }
+
+          .profile-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+          }
+          .profile-container img {
+            margin-left: 20px;
+          }
+
+          .button-container {
+            display: flex;
+            align-items: center;
+          }
+          .button-container button {
+            margin-left: 10px;
+          }
+
+          .profile-container select {
+            margin-right: 10px;
+          }
+
+          .profile-container img {
+            margin-left: 20px;
+            order: 1;
+          }
+
+          /* Styles pour le menu déroulant */
+          .dropdown {
+            position: relative;
+            display: inline-block;
+          }
+
+          .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: var(--color-dropdown-bg);
+            min-width: 160px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+            border: 1px solid var(--color-dropdown-border);
+            border-radius: 8px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.2s ease;
+            transform: translateY(-10px);
+          }
+
+          .dropdown-content a {
+            color: var(--color-dropdown-text);
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.2s ease, color 0.2s ease;
+          }
+
+          .dropdown-content a:hover {
+            background-color: var(--color-dropdown-hover);
+            color: var(--color-dropdown-text-hover);
+            transform: scale(1.05);
+          }
+
+          .dropdown:hover .dropdown-content {
+            display: block;
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+          }
+
+          /* Amélioration visuelle du bouton dropdown */
+          .dropdown:hover .dropdown-content {
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+          }
+
+          /* Animation de l'apparition et disparition */
+          .dropdown:hover .dropdown-content {
+            animation: dropdownFadeIn 0.3s ease forwards;
+          }
+
+          /* Effet d'animation pour l'apparition */
+          @keyframes dropdownFadeIn {
+            0% {
+              opacity: 0;
+              transform: translateY(-10px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        </style>
+      </head>
+<body>
+    <div class="container">
+        <!-- Le contenu de votre page sera ici -->
+    </div>
+    <div id="login-container">
+      <button id="login-button">
+          <i class="fab fa-github"></i> Connect with GitHub
+      </button>
+      <p id="error-message" style="color: red; display: none;">Error: Please connect with GitHub.</p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,42 @@
+{
+  "name": "script-git-commit",
+  "version": "1.0.0",
+  "description": "A project to manage git commits with time on commit and export issues",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start:dev": "nodemon server.js --env-file=.env",
+    "start:test": "node server.js --env-file=.env",
+    "start:prod": "NODE_ENV=production node server.js",
+    "test:e2e:dev": "cypress open",
+    "test:e2e:ci": "cypress run"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "http-server": "^14.1.1",
+    "mysql2": "^3.12.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "cypress": "^14.0.0",
+    "cypress-downloadfile": "^1.2.4",
+    "nodemon": "^3.1.9"
+  },
+  "authors": [ 
+    { 
+      "name": "Quentin Métroz", 
+      "email": "quentinmet7@gmail.com" 
+    }, 
+    { 
+      "name": "Timothy Jotterand", 
+      "email": "JSP@gmail.com" 
+    } 
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/script-git-commit.git"
+  }
+}
