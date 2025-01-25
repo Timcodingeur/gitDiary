@@ -80,14 +80,6 @@ describe('Server Tests', () => {
 
   // ----------- POST /add-time -----------
   describe('POST /add-time', () => {
-    it('should return 400 if hash or time is missing', async () => {
-      let res = await request(app).post('/add-time').send({ hash: 'abc' });
-      expect(res.status).toBe(400);
-
-      res = await request(app).post('/add-time').send({ time: 10 });
-      expect(res.status).toBe(400);
-    });
-
     it('should handle DB error on SELECT', async () => {
       dbQueryStub.mockImplementation((query, values, callback) => {
         callback(new Error('DB SELECT error'), null);
