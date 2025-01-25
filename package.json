@@ -33,6 +33,7 @@
     "chai": "^5.1.2",
     "cypress": "^14.0.0",
     "cypress-downloadfile": "^1.2.4",
+    "fetch": "^1.1.0",
     "nodemon": "^3.1.9",
     "sinon": "^19.0.2",
     "supertest": "^7.0.0"
