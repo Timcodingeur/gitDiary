@@ -3,7 +3,7 @@ import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
 import request from 'supertest';
 import * as nodeFetch from 'node-fetch';
 import { app, db } from '../server.js';
-const PORT = 8000;
+
 jest.mock('node-fetch', () => ({
   __esModule: true,
   default: jest.fn(),
@@ -210,99 +210,89 @@ describe('Server Tests', () => {
     });
   });
 });
-app.get('/', (req, res) => {
-  return res.sendFile(path.join(__dirname, 'public', 'index.html'));
+describe('POST /oauth/github without environment variables', () => {
+  it('should return 500 if CLIENT_ID or CLIENT_SECRET is not defined', async () => {
+    delete process.env.APP_CLIENT_ID;
+    delete process.env.APP_CLIENT_SECRET;
+
+    const res = await request(app).post('/oauth/github').send({ code: 'some_code' });
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('error', expect.stringContaining('undefined'));
+  });
 });
+describe('POST /add-time edge cases', () => {
+  it('should return 400 if time is null', async () => {
+    const res = await request(app).post('/add-time').send({ hash: 'abc', time: null });
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('error', 'Missing hash or time in body');
+  });
 
-app.get('/callback', (req, res) => {
-  return res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  it('should return 400 if hash is empty', async () => {
+    const res = await request(app).post('/add-time').send({ hash: '', time: 10 });
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty('error', 'Missing hash or time in body');
+  });
 });
+describe('Catch-all route for unknown methods', () => {
+  it('should redirect to / for unknown DELETE route', async () => {
+    const res = await request(app).delete('/unknown-route');
+    expect(res.status).toBe(302);
+    expect(res.header.location).toBe('/');
+  });
 
-app.post('/oauth/github', async (req, res, next) => {
-  const { code } = req.body;
-  if (!code) {
-    return res.status(400).json({ error: 'Missing code parameter' });
-  }
-
-  const client_id = CLIENT_ID;
-  const client_secret = CLIENT_SECRET;
-
-  try {
-    const response = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({ client_id, client_secret, code }),
+  it('should redirect to / for unknown PATCH route', async () => {
+    const res = await request(app).patch('/unknown-route');
+    expect(res.status).toBe(302);
+    expect(res.header.location).toBe('/');
+  });
+});
+describe('DB connection', () => {
+  it('should log an error if the database connection fails', () => {
+    const mockError = new Error('Mock DB connection error');
+    jest.spyOn(db, 'connect').mockImplementationOnce((callback) => {
+      callback(mockError);
     });
 
-    if (!response.ok) {
-      throw new Error(`GitHub OAuth failed with status ${response.status}`);
-    }
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
-    const data = await response.json();
-    return res.json(data);
-  } catch (error) {
-    return next(error);
-  }
-});
+    db.connect(() => {});
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Error connecting to the database:',
+      'Mock DB connection error'
+    );
 
-app.post('/add-time', (req, res, next) => {
-  const { hash, time } = req.body;
-  if (!hash || time === undefined) {
-    return res.status(400).json({ error: 'Missing hash or time in body' });
-  }
-
-  const querySelect = 'SELECT * FROM t_commits WHERE hash = ?';
-  db.query(querySelect, [hash], (err, result) => {
-    if (err) {
-      return next(err);
-    }
-    if (result.length > 0) {
-      const query = 'UPDATE t_commits SET time = ? WHERE hash = ?';
-      db.query(query, [time, hash], (errUpdate) => {
-        if (errUpdate) {
-          return next(errUpdate);
-        }
-        return res.status(200).json({ message: 'Time updated' });
-      });
-    } else {
-      const query = 'INSERT INTO t_commits (hash, time) VALUES (?, ?)';
-      db.query(query, [hash, time], (errInsert) => {
-        if (errInsert) {
-          return next(errInsert);
-        }
-        return res.status(201).json({ message: 'Time added' });
-      });
-    }
+    consoleErrorSpy.mockRestore();
   });
 });
+describe('POST /oauth/github', () => {
+  it('should handle non-OK response from GitHub OAuth', async () => {
+    nodeFetch.default.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      json: async () => ({ error: 'forbidden' }),
+    });
 
-app.get('/get-time/:hash', (req, res, next) => {
-  const { hash } = req.params;
-  if (!hash) {
-    return res.status(400).json({ error: 'Missing hash in params' });
-  }
-
-  const query = 'SELECT time FROM t_commits WHERE hash = ?';
-  db.query(query, [hash], (err, result) => {
-    if (err) {
-      return next(err);
-    }
-    return res.json(result);
+    const res = await request(app).post('/oauth/github').send({ code: 'bad_code' });
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('error', 'GitHub OAuth failed with status 403');
   });
 });
+describe('Global error handler', () => {
+  it('should log an unexpected error', async () => {
+    const mockError = new Error('Unexpected global error');
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
-app.all('*', (req, res) => {
-  return res.redirect('/');
-});
+    db.query = jest.fn(() => {
+      throw mockError;
+    });
 
-app.use((err, req, res, next) => {
-  console.error('Global error handler:', err.message);
-  return res.status(500).json({ error: err.message || 'Internal server error' });
-});
+    const res = await request(app).post('/add-time').send({ hash: 'test', time: 123 });
+    expect(res.status).toBe(500);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Global error handler:',
+      'Unexpected global error'
+    );
 
-export const server = app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+    consoleErrorSpy.mockRestore();
+  });
 });
