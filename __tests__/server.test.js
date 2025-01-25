@@ -3,7 +3,7 @@ import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
 import request from 'supertest';
 import * as nodeFetch from 'node-fetch';
 import { app, db } from '../server.js';
-
+const PORT = 8000;
 jest.mock('node-fetch', () => ({
   __esModule: true,
   default: jest.fn(),
