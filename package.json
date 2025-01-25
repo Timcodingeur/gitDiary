@@ -10,9 +10,6 @@
     },
     "transformIgnorePatterns": [
       "/node_modules/(?!node-fetch)"
-    ],
-    "extensionsToTreatAsEsm": [
-      ".js"
     ]
   },
   "scripts": {
