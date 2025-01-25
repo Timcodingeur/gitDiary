@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import sinon from 'sinon';
 import fetch from 'node-fetch';
@@ -8,12 +8,12 @@ describe('Server Tests', () => {
   let dbQueryStub;
   let fetchStub;
 
-  before(() => {
+  beforeAll(() => {
     dbQueryStub = sinon.stub(db, 'query');
     fetchStub = sinon.stub(fetch, 'Promise');
   });
 
-  after(() => {
+  afterAll(() => {
     dbQueryStub.restore();
     fetchStub.restore();
   });
@@ -22,7 +22,7 @@ describe('Server Tests', () => {
   describe('GET /', () => {
     it('should return the index.html file (status 200)', async () => {
       const res = await request(app).get('/');
-      expect(res.status).to.equal(200);
+      expect(res.status).toBe(200);
     });
   });
 
@@ -30,7 +30,7 @@ describe('Server Tests', () => {
   describe('GET /callback', () => {
     it('should return index.html (status 200)', async () => {
       const res = await request(app).get('/callback');
-      expect(res.status).to.equal(200);
+      expect(res.status).toBe(200);
     });
   });
 
@@ -38,16 +38,16 @@ describe('Server Tests', () => {
   describe('POST /oauth/github', () => {
     it('should return 400 if no code is provided', async () => {
       const res = await request(app).post('/oauth/github').send({});
-      expect(res.status).to.equal(400);
-      expect(res.body).to.have.property('error', 'Missing code parameter');
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error', 'Missing code parameter');
     });
 
     it('should return 500 if fetch fails', async () => {
       fetchStub.rejects(new Error('Fake fetch error'));
 
       const res = await request(app).post('/oauth/github').send({ code: 'fake_code' });
-      expect(res.status).to.equal(500);
-      expect(res.body).to.have.property('error').that.includes('Fake fetch error');
+      expect(res.status).toBe(500);
+      expect(res.body).toHaveProperty('error', 'Fake fetch error');
     });
 
     it('should return data from GitHub on success (mocking fetch)', async () => {
@@ -57,8 +57,8 @@ describe('Server Tests', () => {
       });
 
       const res = await request(app).post('/oauth/github').send({ code: 'some_code' });
-      expect(res.status).to.equal(200);
-      expect(res.body).to.deep.equal({ access_token: '12345' });
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ access_token: '12345' });
     });
 
     it('should handle non-2xx fetch response from GitHub', async () => {
@@ -69,8 +69,8 @@ describe('Server Tests', () => {
       });
 
       const res = await request(app).post('/oauth/github').send({ code: 'bad_code' });
-      expect(res.status).to.equal(500);
-      expect(res.body).to.have.property('error').that.includes('GitHub OAuth failed with status 400');
+      expect(res.status).toBe(500);
+      expect(res.body).toHaveProperty('error', 'GitHub OAuth failed with status 400');
     });
   });
 
@@ -78,18 +78,18 @@ describe('Server Tests', () => {
   describe('POST /add-time', () => {
     it('should return 400 if hash or time is missing', async () => {
       let res = await request(app).post('/add-time').send({ hash: 'abc' });
-      expect(res.status).to.equal(400);
+      expect(res.status).toBe(400);
 
       res = await request(app).post('/add-time').send({ time: 10 });
-      expect(res.status).to.equal(400);
+      expect(res.status).toBe(400);
     });
 
     it('should handle DB error on SELECT', async () => {
       dbQueryStub.yields(new Error('DB SELECT error'), null);
 
       const res = await request(app).post('/add-time').send({ hash: 'abc', time: 10 });
-      expect(res.status).to.equal(500);
-      expect(res.body).to.have.property('error').that.includes('DB SELECT error');
+      expect(res.status).toBe(500);
+      expect(res.body).toHaveProperty('error', 'DB SELECT error');
     });
 
     it('should update time if hash exists', async () => {
@@ -97,8 +97,8 @@ describe('Server Tests', () => {
       dbQueryStub.onSecondCall().yields(null, { affectedRows: 1 });
 
       const res = await request(app).post('/add-time').send({ hash: 'abc', time: 10 });
-      expect(res.status).to.equal(200);
-      expect(res.body).to.deep.equal({ message: 'Time updated' });
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ message: 'Time updated' });
     });
 
     it('should handle DB error on UPDATE', async () => {
@@ -106,8 +106,8 @@ describe('Server Tests', () => {
       dbQueryStub.onSecondCall().yields(new Error('DB UPDATE error'));
 
       const res = await request(app).post('/add-time').send({ hash: 'abc', time: 10 });
-      expect(res.status).to.equal(500);
-      expect(res.body).to.have.property('error').that.includes('DB UPDATE error');
+      expect(res.status).toBe(500);
+      expect(res.body).toHaveProperty('error', 'DB UPDATE error');
     });
 
     it('should insert time if hash does not exist', async () => {
@@ -115,8 +115,8 @@ describe('Server Tests', () => {
       dbQueryStub.onSecondCall().yields(null, { insertId: 123 });
 
       const res = await request(app).post('/add-time').send({ hash: 'def', time: 20 });
-      expect(res.status).to.equal(201);
-      expect(res.body).to.deep.equal({ message: 'Time added' });
+      expect(res.status).toBe(201);
+      expect(res.body).toEqual({ message: 'Time added' });
     });
 
     it('should handle DB error on INSERT', async () => {
@@ -124,8 +124,8 @@ describe('Server Tests', () => {
       dbQueryStub.onSecondCall().yields(new Error('DB INSERT error'));
 
       const res = await request(app).post('/add-time').send({ hash: 'def', time: 20 });
-      expect(res.status).to.equal(500);
-      expect(res.body).to.have.property('error').that.includes('DB INSERT error');
+      expect(res.status).toBe(500);
+      expect(res.body).toHaveProperty('error', 'DB INSERT error');
     });
   });
 
@@ -133,7 +133,7 @@ describe('Server Tests', () => {
   describe('GET /get-time/:hash', () => {
     it('should return 400 if hash is missing', async () => {
       const res = await request(app).get('/get-time/'); 
-      expect(res.status).to.equal(404); 
+      expect(res.status).toBe(404); 
 
     });
 
@@ -141,17 +141,18 @@ describe('Server Tests', () => {
       dbQueryStub.yields(new Error('DB TIME error'));
 
       const res = await request(app).get('/get-time/somehash');
-      expect(res.status).to.equal(500);
-      expect(res.body).to.have.property('error').that.includes('DB TIME error');
+      expect(res.status).toBe(500);
+      expect(res.body).toHaveProperty('error', 'DB TIME error');
     });
 
     it('should return the time from DB', async () => {
       dbQueryStub.yields(null, [{ time: 123 }]);
 
       const res = await request(app).get('/get-time/somehash');
-      expect(res.status).to.equal(200);
-      expect(res.body).to.be.an('array').that.has.length(1);
-      expect(res.body[0]).to.have.property('time', 123);
+      expect(res.status).toBe(200);
+      expect(res.body).toBeInstanceOf(Array);
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0]).toHaveProperty('time', 123);
     });
   });
 
@@ -159,8 +160,8 @@ describe('Server Tests', () => {
   describe('GET /random-route', () => {
     it('should redirect to / (302)', async () => {
       const res = await request(app).get('/random-route');
-      expect(res.status).to.equal(302);
-      expect(res.header.location).to.equal('/');
+      expect(res.status).toBe(302);
+      expect(res.header.location).toBe('/');
     });
   });
 });
