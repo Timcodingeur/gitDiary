@@ -1,21 +1,25 @@
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
 import request from 'supertest';
-import sinon from 'sinon';
-import * as nodeFetch from 'node-fetch'; 
+import * as nodeFetch from 'node-fetch';
 import { app, db } from '../server.js';
+
+jest.mock('node-fetch', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
 
 describe('Server Tests', () => {
   let dbQueryStub;
-  let fetchStub;
+  let fetchMock;
 
   beforeAll(() => {
-    dbQueryStub = sinon.stub(db, 'query');
-    fetchStub = sinon.stub(nodeFetch, 'default'); // <-- stub the default function
+    dbQueryStub = jest.spyOn(db, 'query');
+    fetchMock = nodeFetch.default;
   });
 
   afterAll(() => {
-    dbQueryStub.restore();
-    fetchStub.restore();
+    dbQueryStub.mockRestore();
+    fetchMock.mockRestore();
   });
 
   // ----------- GET / -----------
@@ -43,7 +47,7 @@ describe('Server Tests', () => {
     });
 
     it('should return 500 if fetch fails', async () => {
-      fetchStub.rejects(new Error('Fake fetch error'));
+      fetchMock.mockRejectedValue(new Error('Fake fetch error'));
 
       const res = await request(app).post('/oauth/github').send({ code: 'fake_code' });
       expect(res.status).toBe(500);
@@ -51,7 +55,7 @@ describe('Server Tests', () => {
     });
 
     it('should return data from GitHub on success (mocking fetch)', async () => {
-      fetchStub.resolves({
+      fetchMock.mockResolvedValue({
         ok: true,
         json: async () => ({ access_token: '12345' })
       });
@@ -62,7 +66,7 @@ describe('Server Tests', () => {
     });
 
     it('should handle non-2xx fetch response from GitHub', async () => {
-      fetchStub.resolves({
+      fetchMock.mockResolvedValue({
         ok: false,
         status: 400,
         json: async () => ({ error: 'bad request' })
@@ -85,7 +89,9 @@ describe('Server Tests', () => {
     });
 
     it('should handle DB error on SELECT', async () => {
-      dbQueryStub.yields(new Error('DB SELECT error'), null);
+      dbQueryStub.mockImplementation((query, values, callback) => {
+        callback(new Error('DB SELECT error'), null);
+      });
 
       const res = await request(app).post('/add-time').send({ hash: 'abc', time: 10 });
       expect(res.status).toBe(500);
@@ -93,8 +99,11 @@ describe('Server Tests', () => {
     });
 
     it('should update time if hash exists', async () => {
-      dbQueryStub.onFirstCall().yields(null, [{ hash: 'abc', time: 5 }]);
-      dbQueryStub.onSecondCall().yields(null, { affectedRows: 1 });
+      dbQueryStub.mockImplementationOnce((query, values, callback) => {
+        callback(null, [{ hash: 'abc', time: 5 }]);
+      }).mockImplementationOnce((query, values, callback) => {
+        callback(null, { affectedRows: 1 });
+      });
 
       const res = await request(app).post('/add-time').send({ hash: 'abc', time: 10 });
       expect(res.status).toBe(200);
@@ -102,8 +111,11 @@ describe('Server Tests', () => {
     });
 
     it('should handle DB error on UPDATE', async () => {
-      dbQueryStub.onFirstCall().yields(null, [{ hash: 'abc' }]);
-      dbQueryStub.onSecondCall().yields(new Error('DB UPDATE error'));
+      dbQueryStub.mockImplementationOnce((query, values, callback) => {
+        callback(null, [{ hash: 'abc' }]);
+      }).mockImplementationOnce((query, values, callback) => {
+        callback(new Error('DB UPDATE error'));
+      });
 
       const res = await request(app).post('/add-time').send({ hash: 'abc', time: 10 });
       expect(res.status).toBe(500);
@@ -111,8 +123,11 @@ describe('Server Tests', () => {
     });
 
     it('should insert time if hash does not exist', async () => {
-      dbQueryStub.onFirstCall().yields(null, []);
-      dbQueryStub.onSecondCall().yields(null, { insertId: 123 });
+      dbQueryStub.mockImplementationOnce((query, values, callback) => {
+        callback(null, []);
+      }).mockImplementationOnce((query, values, callback) => {
+        callback(null, { insertId: 123 });
+      });
 
       const res = await request(app).post('/add-time').send({ hash: 'def', time: 20 });
       expect(res.status).toBe(201);
@@ -120,8 +135,11 @@ describe('Server Tests', () => {
     });
 
     it('should handle DB error on INSERT', async () => {
-      dbQueryStub.onFirstCall().yields(null, []);
-      dbQueryStub.onSecondCall().yields(new Error('DB INSERT error'));
+      dbQueryStub.mockImplementationOnce((query, values, callback) => {
+        callback(null, []);
+      }).mockImplementationOnce((query, values, callback) => {
+        callback(new Error('DB INSERT error'));
+      });
 
       const res = await request(app).post('/add-time').send({ hash: 'def', time: 20 });
       expect(res.status).toBe(500);
@@ -138,7 +156,9 @@ describe('Server Tests', () => {
     });
 
     it('should handle DB error', async () => {
-      dbQueryStub.yields(new Error('DB TIME error'));
+      dbQueryStub.mockImplementation((query, values, callback) => {
+        callback(new Error('DB TIME error'), null);
+      });
 
       const res = await request(app).get('/get-time/somehash');
       expect(res.status).toBe(500);
@@ -146,7 +166,9 @@ describe('Server Tests', () => {
     });
 
     it('should return the time from DB', async () => {
-      dbQueryStub.yields(null, [{ time: 123 }]);
+      dbQueryStub.mockImplementation((query, values, callback) => {
+        callback(null, [{ time: 123 }]);
+      });
 
       const res = await request(app).get('/get-time/somehash');
       expect(res.status).toBe(200);
