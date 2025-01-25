@@ -4,6 +4,11 @@
   "description": "A project to manage git commits with time on commit and export issues",
   "main": "server.js",
   "type": "module",
+  "jest": {
+    "transform": {
+      "^.+\\.js$": "babel-jest"
+    }
+  },
   "scripts": {
     "start:dev": "nodemon server.js --env-file=.env",
     "start:test": "node server.js --env-file=.env",
@@ -22,6 +27,9 @@
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.7",
+    "@babel/preset-env": "^7.26.7",
+    "babel-jest": "^29.7.0",
     "cypress": "^14.0.0",
     "cypress-downloadfile": "^1.2.4",
     "nodemon": "^3.1.9",
