@@ -7,7 +7,10 @@
   "jest": {
     "transform": {
       "^.+\\.js$": "babel-jest"
-    }
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(node-fetch)/)"
+    ]
   },
   "scripts": {
     "start:dev": "nodemon server.js --env-file=.env",
