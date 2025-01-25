@@ -3,10 +3,13 @@ import request from 'supertest';
 import * as nodeFetch from 'node-fetch';
 import { app, db } from '../server.js';
 
-jest.mock('node-fetch', () => ({
-  __esModule: true,
-  default: jest.fn(),
-}));
+jest.mock('node-fetch', () => {
+  const actualFetch = jest.requireActual('node-fetch');
+  return {
+    __esModule: true,
+    default: jest.fn(actualFetch.default), // Mock avec possibilité d'appels réels
+  };
+});
 
 describe('Server Tests', () => {
   let dbQueryStub;
