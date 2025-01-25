@@ -303,6 +303,6 @@ app.use((err, req, res, next) => {
   return res.status(500).json({ error: err.message || 'Internal server error' });
 });
 
-export const server = app.listen(DB_PORT, () => {
-  console.log(`Server is running on http://localhost:${DB_PORT}`);
+export const server = app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
