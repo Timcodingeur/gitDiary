@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import sinon from 'sinon';
-import fetch from 'node-fetch';
+import * as nodeFetch from 'node-fetch'; 
 import { app, db } from '../server.js';
 
 describe('Server Tests', () => {
@@ -10,7 +10,7 @@ describe('Server Tests', () => {
 
   beforeAll(() => {
     dbQueryStub = sinon.stub(db, 'query');
-    fetchStub = sinon.stub(fetch, 'Promise');
+    fetchStub = sinon.stub(nodeFetch, 'default'); // <-- stub the default function
   });
 
   afterAll(() => {
