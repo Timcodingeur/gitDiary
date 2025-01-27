@@ -49,8 +49,8 @@ jobs:
 
     # Variables d'environnement pour ce job
     env:
-      CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
-      CLIENT_SECRET: ${{ secrets.APP_CLIENT_SECRET }}
+      APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+      APP_CLIENT_SECRET: ${{ secrets.APP_CLIENT_SECRET }}
       DB_HOST: ${{ secrets.DB_HOST }}
       DB_USER: ${{ secrets.DB_USER }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD}}

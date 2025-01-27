@@ -20,6 +20,7 @@ describe('Server Tests', () => {
   let dbQueryStub;
 
   beforeAll(() => {
+
     dbQueryStub = jest.spyOn(db, 'query');
   });
 
