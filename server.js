@@ -43,6 +43,9 @@ app.get('/callback', (req, res) => {
 
 app.post('/oauth/github', async (req, res, next) => {
   const { code } = req.body;
+  if (!process.env.APP_CLIENT_ID || !process.env.APP_CLIENT_SECRET) {
+    return next(new Error('CLIENT_ID or CLIENT_SECRET is undefined'));
+  }
   if (!code) {
     return res.status(400).json({ error: 'Missing code parameter' });
   }
@@ -73,7 +76,8 @@ app.post('/oauth/github', async (req, res, next) => {
 
 app.post('/add-time', (req, res, next) => {
   const { hash, time } = req.body;
-  if (!hash || time === undefined) {
+  // Also handle null time
+  if (!hash || time == null) {
     return res.status(400).json({ error: 'Missing hash or time in body' });
   }
 
@@ -102,7 +106,7 @@ app.post('/add-time', (req, res, next) => {
   });
 });
 
-app.get('/get-time/:hash', (req, res, next) => {
+app.get(['/get-time','/get-time/:hash'], (req, res, next) => {
   const { hash } = req.params;
   if (!hash) {
     return res.status(400).json({ error: 'Missing hash in params' });

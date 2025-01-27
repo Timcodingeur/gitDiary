@@ -6,7 +6,11 @@ import { app, db } from '../server.js';
 
 jest.mock('node-fetch', () => ({
   __esModule: true,
-  default: jest.fn(),
+  // Provide a mock object with mockResolvedValue/mockRejectedValue
+  default: {
+    mockResolvedValue: jest.fn(),
+    mockRejectedValue: jest.fn(),
+  },
 }));
 
 describe('Server Tests', () => {
