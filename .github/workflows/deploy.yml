@@ -7,7 +7,7 @@ on:
       - main
 
 jobs:
-  # 1) AUDIT
+  # 1 AUDIT
   audit:
     name: "Audit Dependencies"
     runs-on: ubuntu-latest
@@ -74,7 +74,7 @@ jobs:
       - name: Run unit tests
         run: npm run test:ci
 
-  # 2) TEST E2E (avec matrice + service Docker MySQL)
+  # 2 TEST E2E (avec matrice + service Docker MySQL)
   test_e2e:
     name: "E2E Tests"
     runs-on: ubuntu-latest
@@ -149,7 +149,7 @@ jobs:
           wait-on-timeout: 60
           config: baseUrl=http://localhost:8000
 
-  # 3) DEPLOY (dépend des tests e2e)
+  # 3 DEPLOY (dépend des tests e2e)
   deploy:
     name: "Deploy to Hostinger"
     runs-on: ubuntu-latest
