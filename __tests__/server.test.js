@@ -4,14 +4,15 @@ import request from 'supertest';
 import * as nodeFetch from 'node-fetch';
 import { app, db } from '../server.js';
 
-jest.mock('node-fetch', () => ({
-  __esModule: true,
-  // Provide a mock object with mockResolvedValue/mockRejectedValue
-  default: {
-    mockResolvedValue: jest.fn(),
-    mockRejectedValue: jest.fn(),
-  },
-}));
+jest.mock('node-fetch', () => {
+  const fetchMock = jest.fn();
+  fetchMock.mockResolvedValue = jest.fn();
+  fetchMock.mockRejectedValue = jest.fn();
+  return {
+    __esModule: true,
+    default: fetchMock
+  };
+});
 
 describe('Server Tests', () => {
   let dbQueryStub;
