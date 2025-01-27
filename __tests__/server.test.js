@@ -7,10 +7,13 @@ import { app, db } from '../server.js';
 
 // Mock node-fetch in a way that aligns with the default import
 jest.mock('node-fetch', () => {
-  const mockFetch = jest.fn();
-  mockFetch.mockResolvedValue = jest.fn();
-  mockFetch.mockRejectedValue = jest.fn();
-  return mockFetch;
+  const fetchMock = jest.fn();
+  fetchMock.mockResolvedValue = jest.fn();
+  fetchMock.mockRejectedValue = jest.fn();
+  return {
+    __esModule: true,
+    default: fetchMock
+  };
 });
 
 describe('Server Tests', () => {
@@ -61,7 +64,7 @@ describe('Server Tests', () => {
         ok: true,
         json: async () => ({ access_token: '12345' }),
       });
-      const res = await request(app).post('/oauth/github').send({ code: 'some_code' });
+      const res = await request(app).post('/oauth/github').send({ code: 'mock_code' });
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ access_token: '12345' });
     });
@@ -74,7 +77,7 @@ describe('Server Tests', () => {
       });
       const res = await request(app).post('/oauth/github').send({ code: 'bad_code' });
       expect(res.status).toBe(500);
-      expect(res.body.error).toContain('GitHub OAuth failed');
+      expect(res.body.error).toMatch(/GitHub OAuth failed/);
     });
   });
 
