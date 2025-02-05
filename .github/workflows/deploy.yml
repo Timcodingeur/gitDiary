@@ -28,12 +28,12 @@ jobs:
 
       - name: Audit
         run: npm audit
-
+  # 2 Unit test
   test_unit:
     name: "Unit Tests"
     runs-on: ubuntu-latest
     needs: [audit]
-# On déclare ici le service MySQL
+    # On déclare ici le service MySQL
     services:
       mysql:
         image: mysql:latest
