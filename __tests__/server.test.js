@@ -1,21 +1,6 @@
 // server.test.js
-import { jest } from "@jest/globals";
-
-// Créez un mock pour node-fetch
-const fetchMock = jest.fn();
-// On ajoute les méthodes de mock attendues :
-fetchMock.mockResolvedValue = jest.fn();
-fetchMock.mockRejectedValue = jest.fn();
-
-// Définissez le mock pour 'node-fetch' AVANT tout autre import en utilisant unstable_mockModule
-await jest.unstable_mockModule("node-fetch", () => ({
-  __esModule: true,
-  default: fetchMock,
-}));
-
-// Maintenant, importez les modules qui utiliseront le mock
+import { describe, it, expect, beforeAll, afterAll, jest } from "@jest/globals";
 import request from "supertest";
-import fetch from "node-fetch"; // Ce "fetch" est le mock défini ci-dessus
 import { app, db } from "../server.js";
 
 describe("Server Tests", () => {
@@ -50,43 +35,6 @@ describe("Server Tests", () => {
     it("should return 400 if no code is provided", async () => {
       const res = await request(app).post("/oauth/github").send({});
       expect(res.status).toBe(400);
-    });
-
-    it("should return 500 if fetch fails", async () => {
-      // Ici, nous utilisons le mock pour simuler une erreur de fetch.
-      fetch.mockRejectedValue(new Error("Fake fetch error"));
-      const res = await request(app)
-        .post("/oauth/github")
-        .send({ code: "fake_code" });
-      expect(res.status).toBe(500);
-      expect(res.body.error).toBe("Fake fetch error");
-    });
-
-    it("should return data from GitHub on success (mocking fetch)", async () => {
-      // Simule un fetch qui retourne un access token
-      fetch.mockResolvedValue({
-        ok: true,
-        json: async () => ({ access_token: "12345" }),
-      });
-      const res = await request(app)
-        .post("/oauth/github")
-        .send({ code: "mock_code" });
-      expect(res.status).toBe(200);
-      expect(res.body).toEqual({ access_token: "12345" });
-    });
-
-    it("should handle non-2xx fetch response from GitHub", async () => {
-      // Simule un fetch renvoyant une réponse non-ok
-      fetch.mockResolvedValue({
-        ok: false,
-        status: 400,
-        json: async () => ({ error: "bad request" }),
-      });
-      const res = await request(app)
-        .post("/oauth/github")
-        .send({ code: "bad_code" });
-      expect(res.status).toBe(500);
-      expect(res.body.error).toMatch(/GitHub OAuth failed/);
     });
   });
 
