@@ -1,20 +1,21 @@
 // server.test.js
 import { jest } from "@jest/globals";
 
-// --- Définir le mock de node-fetch AVANT tout autre import ---
-jest.mock("node-fetch", () => {
-  // Crée une fonction mockée et ajoute les méthodes de mock attendues
-  const fetchMock = jest.fn();
-  fetchMock.mockResolvedValue = jest.fn();
-  fetchMock.mockRejectedValue = jest.fn();
-  return {
-    __esModule: true,
-    default: fetchMock,
-  };
-});
+// Créez un mock pour node-fetch
+const fetchMock = jest.fn();
+// On ajoute les méthodes de mock attendues :
+fetchMock.mockResolvedValue = jest.fn();
+fetchMock.mockRejectedValue = jest.fn();
 
+// Définissez le mock pour 'node-fetch' AVANT tout autre import en utilisant unstable_mockModule
+await jest.unstable_mockModule("node-fetch", () => ({
+  __esModule: true,
+  default: fetchMock,
+}));
+
+// Maintenant, importez les modules qui utiliseront le mock
 import request from "supertest";
-import fetch from "node-fetch"; // Ce fetch est maintenant le mock défini ci-dessus
+import fetch from "node-fetch"; // Ce "fetch" est le mock défini ci-dessus
 import { app, db } from "../server.js";
 
 describe("Server Tests", () => {
@@ -52,6 +53,7 @@ describe("Server Tests", () => {
     });
 
     it("should return 500 if fetch fails", async () => {
+      // Ici, nous utilisons le mock pour simuler une erreur de fetch.
       fetch.mockRejectedValue(new Error("Fake fetch error"));
       const res = await request(app)
         .post("/oauth/github")
@@ -61,6 +63,7 @@ describe("Server Tests", () => {
     });
 
     it("should return data from GitHub on success (mocking fetch)", async () => {
+      // Simule un fetch qui retourne un access token
       fetch.mockResolvedValue({
         ok: true,
         json: async () => ({ access_token: "12345" }),
@@ -73,6 +76,7 @@ describe("Server Tests", () => {
     });
 
     it("should handle non-2xx fetch response from GitHub", async () => {
+      // Simule un fetch renvoyant une réponse non-ok
       fetch.mockResolvedValue({
         ok: false,
         status: 400,
