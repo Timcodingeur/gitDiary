@@ -1,7 +1,7 @@
 // script/handlers.js
 import { exportToPdf, exportToMarkdown, exportToCsv } from "./export.js";
-import { createIssuesTable, createTable, groupCommitsByDate } from "./table.js";
-import { getSumCommitsTime, handleClickCommit } from "./time.js";
+import { createIssuesTable, createTable, groupCommitsByDate } from "../../../backend/src/routes/table.js";
+import { getSumCommitsTime, handleClickCommit } from "../../../backend/src/routes/time.js";
 import { getCommits } from "./github.js";
 
 export function handleClickCommits(repos, token) {

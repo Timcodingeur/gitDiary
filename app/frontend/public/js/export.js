@@ -1,5 +1,5 @@
 // script/export.js
-import { createTableFactice } from "./table.js";
+import { createTableFactice } from "../../../backend/src/routes/table.js";
 
 export async function exportToPdf() {
   const { jsPDF } = window.jspdf;

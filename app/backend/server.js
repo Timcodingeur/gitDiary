@@ -14,7 +14,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+// Commenter la ligne suivante pour ne pas servir le dossier "public"
+// app.use(express.static(path.join(__dirname, "public")));
 
 // --- Connexion DB ---
 export const db = mysql.createConnection({
@@ -35,11 +36,11 @@ db.connect((err) => {
 
 // --- Routes ---
 app.get("/", (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.send("API is running");
 });
 
 app.get("/callback", (req, res) => {
-  return res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.send("Callback endpoint");
 });
 
 app.post("/oauth/github", async (req, res, next) => {
@@ -80,7 +81,6 @@ app.post("/oauth/github", async (req, res, next) => {
 
 app.post("/add-time", (req, res, next) => {
   const { hash, time } = req.body;
-  // Also handle null time
   if (!hash || time == null) {
     return res.status(400).json({ error: "Missing hash or time in body" });
   }
@@ -110,7 +110,7 @@ app.post("/add-time", (req, res, next) => {
   });
 });
 
-app.get(["/get-time", "/get-time/:hash"], (req, res, next) => {
+app.get("/get-time/:hash", (req, res, next) => {
   const { hash } = req.params;
   if (!hash) {
     return res.status(400).json({ error: "Missing hash in params" });
@@ -126,14 +126,12 @@ app.get(["/get-time", "/get-time/:hash"], (req, res, next) => {
 });
 
 app.all("*", (req, res) => {
-  return res.redirect("/");
+  res.status(404).json({ error: "Endpoint not found" });
 });
 
 app.use((err, req, res, next) => {
   console.error("Global error handler:", err.message);
-  return res
-    .status(500)
-    .json({ error: err.message || "Internal server error" });
+  res.status(500).json({ error: err.message || "Internal server error" });
 });
 
 export const server = app.listen(PORT, () => {
