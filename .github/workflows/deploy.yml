@@ -70,10 +70,8 @@ jobs:
         working-directory: app/frontend
     steps:
       - uses: actions/checkout@v4
-        with:
-          ssh-keys: ${{ secrets.SSH_PRIVATE_KEY}}
+        # On retire le paramètre ssh-keys pour éviter les interférences
 
-      # Ajout de la clé de déploiement dans l'agent SSH
       - name: Setup deploy key for SSH
         run: |
           mkdir -p ~/.ssh
@@ -84,44 +82,23 @@ jobs:
           echo "Clés dans l'agent SSH :"
           ssh-add -l
 
-      # Debug : Afficher le répertoire personnel et son contenu
-      - name: Debug Home Directory
+      - name: Add Hostinger to known_hosts
         run: |
-          echo "Répertoire HOME: $HOME"
-          ls -la $HOME
-
-      # Debug : Vérifier et créer le dossier .ssh
-      - name: Create SSH Directory with Debug
-        run: |
-          if [ -d "$HOME/.ssh" ]; then
-            echo "Le dossier $HOME/.ssh existe déjà."
-          elif [ -e "$HOME/.ssh" ]; then
-            echo "Un fichier ou un lien nommé $HOME/.ssh existe déjà. Suppression..."
-            rm -f $HOME/.ssh
-          fi
-          echo "Création du dossier $HOME/.ssh"
-          mkdir -p $HOME/.ssh
-          ls -la $HOME/.ssh
-
-      # Debug : Ajouter l'hôte aux known_hosts avec gestion d'erreur
-      - name: Add Hostinger to known_hosts with Debug
-        run: |
-          echo "Lancement de ssh-keyscan pour l'hôte ${{ secrets.HOSTINGER_HOST }} sur le port ${{ secrets.HOSTINGER_REMOTE_PORT }}"
-          ssh-keyscan -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_HOST }} >> $HOME/.ssh/known_hosts || echo "ssh-keyscan a échoué, mais on continue"
+          echo "Ajout de l'hôte ${{ secrets.HOSTINGER_HOST }} sur le port ${{ secrets.HOSTINGER_REMOTE_PORT }} aux known_hosts"
+          ssh-keyscan -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts
           echo "Contenu de known_hosts :"
-          cat $HOME/.ssh/known_hosts
+          cat ~/.ssh/known_hosts
 
-      # Debug : Tester la connexion SSH en mode verbose
       - name: Test SSH Connection with Debug (Verbose)
         run: |
           echo "Test de la connexion SSH en mode verbose..."
-          ssh -vvv -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "ls -la"
+          ssh -vvv -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "ls -la"
 
-      # Déploiement avec rsync
       - name: Deploy with rsync
         run: |
           rsync -avz -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }}" \
             ./public/ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:"/home/${{ secrets.HOSTINGER_USER }}/public_html/"
+
     
 
 
