@@ -95,8 +95,17 @@ jobs:
           ssh -vvv -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "ls -la"
       - name: Ensure remote directory exists
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "mkdir -p /home/${{ secrets.HOSTINGER_USER }}/public_html"
-      
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_HOST }} "if [ -d /home/${{ secrets.HOSTINGER_USER }}/public_html ]; then
+            echo 'Le dossier existe déjà.';
+          elif [ -e /home/${{ secrets.HOSTINGER_USER }}/public_html ]; then
+            echo 'Un fichier existe à cet emplacement. Suppression...';
+            rm -f /home/${{ secrets.HOSTINGER_USER }}/public_html;
+            mkdir -p /home/${{ secrets.HOSTINGER_USER }}/public_html;
+          else
+            echo 'Création du dossier';
+            mkdir -p /home/${{ secrets.HOSTINGER_USER }}/public_html;
+          fi"
+        
       - name: Deploy with rsync
         run: |
           rsync -avz -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }}" \
