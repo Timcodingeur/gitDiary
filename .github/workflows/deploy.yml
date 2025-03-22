@@ -93,13 +93,15 @@ jobs:
         run: |
           echo "Test de la connexion SSH en mode verbose..."
           ssh -vvv -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "ls -la"
-
+      - name: Ensure remote directory exists
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "mkdir -p /home/${{ secrets.HOSTINGER_USER }}/public_html"
+      
       - name: Deploy with rsync
         run: |
-          rsync -avz \
-            --rsync-path="mkdir -p /home/${{ secrets.HOSTINGER_USER }}/public_html && rsync" \
-            -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }}" \
+          rsync -avz -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }}" \
             ./public/ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:"/home/${{ secrets.HOSTINGER_USER }}/public_html/"
+        
         
 
 
