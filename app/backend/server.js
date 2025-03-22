@@ -126,7 +126,11 @@ app.get("/get-time/:hash", (req, res, next) => {
 });
 
 app.all("*", (req, res) => {
-  res.status(404).json({ error: "Endpoint not found" });
+  if (req.path === "/get-time/") {
+    return res.status(400).json({ error: "Missing hash in params" });
+  }
+  // Redirection vers la racine pour toutes les autres routes inconnues
+  res.redirect("/");
 });
 
 app.use((err, req, res, next) => {
