@@ -71,13 +71,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ssh-keys: ${{ secrets.DEPLOY_KEY }}
+          ssh-keys: ${{ secrets.SSH_PRIVATE_KEY}}
 
       # Ajout de la clé de déploiement dans l'agent SSH
       - name: Setup deploy key for SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/deploy_key
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/deploy_key
