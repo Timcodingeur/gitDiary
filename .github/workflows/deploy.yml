@@ -92,12 +92,6 @@ jobs:
           mkdir -p $HOME/.ssh
           ls -la $HOME/.ssh
 
-      # Debug : Tester la connectivité avant ssh-keyscan
-      - name: Test de connectivité à l'hôte SSH
-        run: |
-          echo "Test de connectivité à l'hôte ${{ secrets.HOSTINGER_HOST }} sur le port ${{ secrets.HOSTINGER_REMOTE_PORT }}"
-          nc -zv ${{ secrets.HOSTINGER_HOST }} ${{ secrets.HOSTINGER_REMOTE_PORT }} || echo "La connexion n'est pas établie sur ce port"
-
       # Debug : Ajouter l'hôte aux known_hosts avec gestion d'erreur
       - name: Add Hostinger to known_hosts with Debug
         run: |
@@ -106,17 +100,25 @@ jobs:
           echo "Contenu de known_hosts :"
           cat $HOME/.ssh/known_hosts
 
-      # Debug : Tester la connexion SSH
-      - name: Test SSH Connection with Debug
+      # Debug : Lister les clés chargées par l'agent SSH
+      - name: Liste des clés dans l'agent SSH
         run: |
-          echo "Test de la connexion SSH..."
-          ssh -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "ls -la"
+          echo "Clés actuellement chargées dans l'agent SSH :"
+          ssh-add -l || echo "Aucune clé n'est chargée."
 
+      # Debug : Tester la connexion SSH en mode verbose
+      - name: Test SSH Connection with Debug (Verbose)
+        run: |
+          echo "Test de la connexion SSH en mode verbose..."
+          ssh -vvv -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "ls -la"
+      
       # Déploiement avec rsync
       - name: Deploy with rsync
         run: |
           rsync -avz -e "ssh -p ${{ secrets.HOSTINGER_REMOTE_PORT }}" \
             ./public/ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:"/home/${{ secrets.HOSTINGER_USER }}/public_html/"
+    
+
 
 
   deploy-backend:
