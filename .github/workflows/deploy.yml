@@ -70,8 +70,18 @@ jobs:
         working-directory: app/frontend
     steps:
       - uses: actions/checkout@v4
-
-
+      
+      # Ajoutez ces étapes de débogage
+      - name: Debug SSH Connection
+        run: |
+          echo "Testing SSH connection..."
+          ssh -v -p ${{ secrets.HOSTINGER_REMOTE_PORT }} \
+              -o StrictHostKeyChecking=no \
+              ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} \
+              'echo "SSH Connection successful"'
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+          
       - uses: easingthemes/ssh-deploy@v2.1.5
         with:
           source: "app/frontend/public/"
@@ -80,7 +90,7 @@ jobs:
           remote_user: ${{ secrets.HOSTINGER_USER }}
           ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
           remote_port: ${{ secrets.HOSTINGER_REMOTE_PORT }}
-          args: "-rltgoDzvO --delete"
+          args: "-rltgoDzvO --delete -v"  # Ajout de -v pour verbose
 
   deploy-backend:
     name: "Deploy Backend to VPS"
