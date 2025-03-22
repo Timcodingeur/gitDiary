@@ -22,19 +22,19 @@
 
 * ### Login 
 
-![Image du login avec l'api de GitHub](./assets/web-application-overview/login-page.png)
+![Image du login avec l'api de GitHub](./app/frontend/assets/web-application-overview/login-page.png)
 
 * ### Repo picker
 
-![Image du choix pour le repo](./assets/web-application-overview/repo-picker.png)
+![Image du choix pour le repo](./app/frontend/assets/web-application-overview/repo-picker.png)
 
 * ### Commits table
 
-![Image du tableau des commits](./assets/web-application-overview/commits-table.png)
+![Image du tableau des commits](./app/frontend/assets/web-application-overview/commits-table.png)
 
 * ### Issues table
 
-![Image du tableau des issues](./assets/web-application-overview/issues-table.png)
+![Image du tableau des issues](./app/frontend/assets/web-application-overview/issues-table.png)
 
 
 ---
@@ -54,20 +54,20 @@
 
 * ### Language :
 
-![Icone HTML](./assets/language-icon/html-icon.webp)
-![Icone CSS](./assets/language-icon/css-icon.png)
-![Icone JS](./assets/language-icon/js-icon.png)
-![Icone SQL](./assets/language-icon/sql-icon.png)
-![Icone Bash](./assets/language-icon/bash-icon.png)
-![Icone JSON](./assets/language-icon/json-icon.png)
+![Icone HTML](./app/frontend/assets/language-icon/html-icon.webp)
+![Icone CSS](./app/frontend/assets/language-icon/css-icon.png)
+![Icone JS](./app/frontend/assets/language-icon/js-icon.png)
+![Icone SQL](./app/frontend/assets/language-icon/sql-icon.png)
+![Icone Bash](./app/frontend/assets/language-icon/bash-icon.png)
+![Icone JSON](./app/frontend/assets/language-icon/json-icon.png)
 
 * ### Outils :
 
-![Icone VS Code](./assets/tools-icon/vscode-icon.jfif)
-![Icone Git](./assets/tools-icon/git-icon.png)
-![Icone GitHub](./assets/tools-icon/github-icon.webp)
-![Icone Node.js](./assets/tools-icon/node-icon.png)
-![Icone Docker](./assets/tools-icon/docker-icon.png)
+![Icone VS Code](./app/frontend/assets/tools-icon/vscode-icon.jfif)
+![Icone Git](./app/frontend/assets/tools-icon/git-icon.png)
+![Icone GitHub](./app/frontend/assets/tools-icon/github-icon.webp)
+![Icone Node.js](./app/frontend/assets/tools-icon/node-icon.png)
+![Icone Docker](./app/frontend/assets/tools-icon/docker-icon.png)
 
 ---
 
