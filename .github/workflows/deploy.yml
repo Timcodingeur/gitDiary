@@ -96,8 +96,11 @@ jobs:
 
       - name: Deploy with rsync
         run: |
-          rsync -avz -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }}" \
-          ./public/ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:"/home/${{ secrets.HOSTINGER_USER }}/public_html/."
+          rsync -avz \
+            --rsync-path="mkdir -p /home/${{ secrets.HOSTINGER_USER }}/public_html && rsync" \
+            -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }}" \
+            ./public/ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:"/home/${{ secrets.HOSTINGER_USER }}/public_html/"
+        
 
 
     
