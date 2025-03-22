@@ -70,22 +70,13 @@ jobs:
         working-directory: app/frontend
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Install SSH Key
-        uses: shimataro/ssh-key-action@v2
         with:
-          key: ${{ secrets.HOSTINGER_PRIVATE_KEY }}
-          known_hosts: ${{ secrets.HOSTINGER_KNOWN_HOSTS }}
-          if_key_exists: replace
-          
-      - name: Adding Known Hosts
-        run: |
-          ssh-keyscan -p ${{ secrets.HOSTINGER_REMOTE_PORT }} -H ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts
-          
+          ssh-key: ${{ secrets.GITHUB_TOKEN }}  # Utilise la Deploy Key configurée
+      
       - name: Deploy with rsync
         run: |
           rsync -avz -e "ssh -p ${{ secrets.HOSTINGER_REMOTE_PORT }}" \
-            ./public/ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:${{ secrets.HOSTINGER_TARGET }}
+            ./public/ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:"/home/${{ secrets.HOSTINGER_USER }}/public_html/"
 
   deploy-backend:
     name: "Deploy Backend to VPS"
