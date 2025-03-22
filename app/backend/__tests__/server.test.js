@@ -16,17 +16,19 @@ describe("Server Tests", () => {
 
   // ----------- GET / -----------
   describe("GET /", () => {
-    it("should return the index.html file (status 200)", async () => {
+    it("should return API is running message", async () => {
       const res = await request(app).get("/");
       expect(res.status).toBe(200);
+      expect(res.text).toBe("API is running");  // Updated expectation
     });
   });
 
   // ----------- GET /callback -----------
   describe("GET /callback", () => {
-    it("should return index.html (status 200)", async () => {
-      const res = await request(app).get("/callback");
-      expect(res.status).toBe(200);
+    it("should redirect to frontend with code", async () => {
+      const res = await request(app).get("/callback?code=test_code");
+      expect(res.status).toBe(302);  // Changed from 200 to 302 for redirect
+      expect(res.header.location).toBe("http://127.0.0.1:5500/app/frontend/public/?code=test_code");
     });
   });
 
@@ -35,6 +37,11 @@ describe("Server Tests", () => {
     it("should return 400 if no code is provided", async () => {
       const res = await request(app).post("/oauth/github").send({});
       expect(res.status).toBe(400);
+    });
+
+    it("should attempt to exchange code for token", async () => {
+      const res = await request(app).post("/oauth/github").send({ code: "test_code" });
+      expect([200, 500]).toContain(res.status); // Either success or GitHub API error
     });
   });
 
@@ -125,7 +132,7 @@ describe("Server Tests", () => {
 
   // ----------- GET /get-time/:hash -----------
   describe("GET /get-time/:hash", () => {
-    it("should return 400 if hash is not provided in the request", async () => {
+    it("should return 400 if hash is missing", async () => {
       const res = await request(app).get("/get-time/");
       expect(res.status).toBe(400);
       expect(res.body).toHaveProperty("error", "Missing hash in params");
@@ -156,10 +163,10 @@ describe("Server Tests", () => {
 
   // ----------- Catch-all route -----------
   describe("Catch-all route", () => {
-    it("should redirect to / for unknown GET route", async () => {
+    it("should handle unknown routes", async () => {
       const res = await request(app).get("/random-route");
-      expect(res.status).toBe(302);
-      expect(res.header.location).toBe("/");
+      expect(res.status).toBe(302); // Redirect status
+      expect(res.header.location).toBe("/"); // Redirects to root
     });
 
     it("should redirect to / for unknown POST route", async () => {
@@ -172,6 +179,12 @@ describe("Server Tests", () => {
       const res = await request(app).put("/unknown-route");
       expect(res.status).toBe(302);
       expect(res.header.location).toBe("/");
+    });
+
+    it("should handle missing hash in get-time", async () => {
+      const res = await request(app).get("/get-time/");
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty("error", "Missing hash in params");
     });
   });
 
