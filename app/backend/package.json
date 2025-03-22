@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start:dev": "nodemon server.js --env-file=.env",
+    "start": "node server.mjs",
     "start:test": "node server.js --env-file=.env",
     "start:prod": "NODE_ENV=production node server.js",
     "test:e2e:dev": "cypress open",

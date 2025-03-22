@@ -1,7 +1,7 @@
 // server.test.js
 import { describe, it, expect, beforeAll, afterAll, jest } from "@jest/globals";
 import request from "supertest";
-import { app, db } from "../server.js";
+import { app, db } from "../server.mjs";
 
 describe("Server Tests", () => {
   let dbQueryStub;

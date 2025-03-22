@@ -6,7 +6,7 @@
 </head>
 <body>
     <div id="login-section">
-        <button id="github-login" onclick="location.href='http://localhost:8000/oauth/github'">Login with GitHub</button>
+        <button id="github-login">Connect with GitHub</button>
     </div>
     
     <div id="main-section" style="display:none">
@@ -14,10 +14,15 @@
         <div class="container"></div>
     </div>
 
-    <script src="js/api.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/export.js"></script>
-    <script src="js/handler.js"></script>
-    <script src="js/main.js"></script>
+    <script type="module">
+        import { startOAuth } from './js/auth.js';
+        document.getElementById('github-login').addEventListener('click', startOAuth);
+    </script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/main.js"></script>
+    <script type="module" src="js/handler.js"></script>
+    <script type="module" src="js/github.js"></script>
+    <script type="module" src="js/time.js"></script>
+    <script type="module" src="js/export.js"></script>
 </body>
 </html>

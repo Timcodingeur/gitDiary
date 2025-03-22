@@ -1,49 +1,45 @@
-// script/time.js
-export async function addTimeToTheDatbase(hash, time) {
-  const response = await fetch("http://localhost:8000/add-time", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ hash, time }),
+import express from 'express';
+import { db } from '../../server.mjs';
+
+const router = express.Router();
+
+router.post("/add-time", (req, res, next) => {
+  const { hash, time } = req.body;
+  if (!hash || time == null) {
+    return res.status(400).json({ error: "Missing hash or time in body" });
+  }
+
+  const querySelect = "SELECT * FROM t_commits WHERE hash = ?";
+  db.query(querySelect, [hash], (err, result) => {
+    if (err) return next(err);
+    
+    if (result.length > 0) {
+      const query = "UPDATE t_commits SET time = ? WHERE hash = ?";
+      db.query(query, [time, hash], (errUpdate) => {
+        if (errUpdate) return next(errUpdate);
+        res.status(200).json({ message: "Time updated" });
+      });
+    } else {
+      const query = "INSERT INTO t_commits (hash, time) VALUES (?, ?)";
+      db.query(query, [hash, time], (errInsert) => {
+        if (errInsert) return next(errInsert);
+        res.status(201).json({ message: "Time added" });
+      });
+    }
   });
-  if (!response.ok) {
-    console.error("Error adding time to the database:", response.statusText);
-  } else {
-    console.log("Time spent added to the database.");
+});
+
+router.get("/get-time/:hash", (req, res, next) => {
+  const { hash } = req.params;
+  if (!hash) {
+    return res.status(400).json({ error: "Missing hash in params" });
   }
-}
 
-export function handleClickCommit(td) {
-  const time = prompt("Enter the time spent on this task (in minutes):");
-  const hour = Math.floor(time / 60);
-  const minute = time % 60;
-  td.textContent = `${hour}h ${minute} min`;
-  addTimeToTheDatbase(td.parentElement.firstChild.textContent, time);
-}
+  const query = "SELECT time FROM t_commits WHERE hash = ?";
+  db.query(query, [hash], (err, result) => {
+    if (err) return next(err);
+    res.json(result);
+  });
+});
 
-export function formatDuration(duration) {
-  const days = Math.floor(duration / (1000 * 60 * 60 * 24));
-  const hours = Math.floor(
-    (duration % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-  );
-  const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((duration % (1000 * 60)) / 1000);
-  return `${days} days, ${hours} hours, ${minutes} minutes, ${seconds} seconds`;
-}
-
-export async function getSumCommitsTime(commits) {
-  let minutes = 0;
-  for (const commit of commits) {
-    const response = await fetch(
-      "http://localhost:8000/get-time/" + commit.sha,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    const data = await response.json();
-    minutes += Number(data[0]?.time) || 0;
-  }
-  const hour = Math.floor(minutes / 60);
-  const minute = minutes % 60;
-  return `${hour}h ${minute} min`;
-}
+export default router;
