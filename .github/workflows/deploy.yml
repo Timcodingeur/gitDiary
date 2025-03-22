@@ -71,34 +71,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Debug Host Key
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -p ${{ secrets.HOSTINGER_REMOTE_PORT }} -H ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Setup SSH Key
-        run: |
-          eval $(ssh-agent -s)
-          echo "Add deploy key"
-          ssh-add <(echo "${{ secrets.HOSTINGER_PRIVATE_KEY }}")
-          
-      - name: Debug SSH Connection
-        run: |
-          echo "Testing SSH connection..."
-          ssh -v -p ${{ secrets.HOSTINGER_REMOTE_PORT }} \
-              -o StrictHostKeyChecking=no \
-              ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} \
-              'echo "SSH Connection successful"'
-          
-      - uses: easingthemes/ssh-deploy@v2.1.5
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
         with:
-          source: "app/frontend/public/"
-          target: ${{ secrets.HOSTINGER_TARGET }}
-          remote_host: ${{ secrets.HOSTINGER_HOST }}
-          remote_user: ${{ secrets.HOSTINGER_USER }}
-          ssh_private_key: ${{ secrets.HOSTINGER_PRIVATE_KEY }}
-          remote_port: ${{ secrets.HOSTINGER_REMOTE_PORT }}
-          args: "-rltgoDzvO --delete -v"
+          key: ${{ secrets.HOSTINGER_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.HOSTINGER_KNOWN_HOSTS }}
+          if_key_exists: replace
+          
+      - name: Adding Known Hosts
+        run: |
+          ssh-keyscan -p ${{ secrets.HOSTINGER_REMOTE_PORT }} -H ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts
+          
+      - name: Deploy with rsync
+        run: |
+          rsync -avz -e "ssh -p ${{ secrets.HOSTINGER_REMOTE_PORT }}" \
+            ./public/ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:${{ secrets.HOSTINGER_TARGET }}
 
   deploy-backend:
     name: "Deploy Backend to VPS"
