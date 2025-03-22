@@ -69,20 +69,16 @@ jobs:
       run:
         working-directory: app/frontend
     steps:
-      # Modifié pour utiliser la Deploy Key correctement
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          persist-credentials: false
+          ssh-keys: ${{ secrets.DEPLOY_KEY }}  # Utilise la clé de déploiement GitHub
           
-      - name: Install SSH key
-        uses: webfactory/ssh-agent@v0.8.0
-        with:
-          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
-      
       - name: Deploy with rsync
         run: |
-          rsync -avz -e "ssh -p ${{ secrets.HOSTINGER_REMOTE_PORT }} -o StrictHostKeyChecking=no" \
+          mkdir -p ~/.ssh
+          ssh-keyscan -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts
+          ssh -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "ls -la"
+          rsync -avz -e "ssh -p ${{ secrets.HOSTINGER_REMOTE_PORT }}" \
             ./public/ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:"/home/${{ secrets.HOSTINGER_USER }}/public_html/"
 
   deploy-backend:
