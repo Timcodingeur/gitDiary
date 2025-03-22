@@ -92,11 +92,17 @@ jobs:
           mkdir -p $HOME/.ssh
           ls -la $HOME/.ssh
 
-      # Debug : Ajouter l'hôte Hostinger aux known_hosts
+      # Debug : Tester la connectivité avant ssh-keyscan
+      - name: Test de connectivité à l'hôte SSH
+        run: |
+          echo "Test de connectivité à l'hôte ${{ secrets.HOSTINGER_HOST }} sur le port ${{ secrets.HOSTINGER_REMOTE_PORT }}"
+          nc -zv ${{ secrets.HOSTINGER_HOST }} ${{ secrets.HOSTINGER_REMOTE_PORT }} || echo "La connexion n'est pas établie sur ce port"
+
+      # Debug : Ajouter l'hôte aux known_hosts avec gestion d'erreur
       - name: Add Hostinger to known_hosts with Debug
         run: |
           echo "Lancement de ssh-keyscan pour l'hôte ${{ secrets.HOSTINGER_HOST }} sur le port ${{ secrets.HOSTINGER_REMOTE_PORT }}"
-          ssh-keyscan -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_HOST }} >> $HOME/.ssh/known_hosts
+          ssh-keyscan -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_HOST }} >> $HOME/.ssh/known_hosts || echo "ssh-keyscan a échoué, mais on continue"
           echo "Contenu de known_hosts :"
           cat $HOME/.ssh/known_hosts
 
@@ -111,6 +117,7 @@ jobs:
         run: |
           rsync -avz -e "ssh -p ${{ secrets.HOSTINGER_REMOTE_PORT }}" \
             ./public/ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:"/home/${{ secrets.HOSTINGER_USER }}/public_html/"
+
 
   deploy-backend:
     name: "Deploy Backend to VPS"
