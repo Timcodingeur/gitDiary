@@ -71,18 +71,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup SSH Key
+      - name: Debug Host Key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p ${{ secrets.HOSTINGER_REMOTE_PORT }} -H ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Setup SSH Key
+        run: |
           eval $(ssh-agent -s)
-          ssh-add ~/.ssh/deploy_key
+          echo "Add deploy key"
+          ssh-add <(echo "${{ secrets.HOSTINGER_PRIVATE_KEY }}")
           
       - name: Debug SSH Connection
         run: |
           echo "Testing SSH connection..."
-          ssh -v -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }} \
+          ssh -v -p ${{ secrets.HOSTINGER_REMOTE_PORT }} \
               -o StrictHostKeyChecking=no \
               ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} \
               'echo "SSH Connection successful"'
@@ -93,7 +96,7 @@ jobs:
           target: ${{ secrets.HOSTINGER_TARGET }}
           remote_host: ${{ secrets.HOSTINGER_HOST }}
           remote_user: ${{ secrets.HOSTINGER_USER }}
-          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          ssh_private_key: ${{ secrets.HOSTINGER_PRIVATE_KEY }}
           remote_port: ${{ secrets.HOSTINGER_REMOTE_PORT }}
           args: "-rltgoDzvO --delete -v"
 
