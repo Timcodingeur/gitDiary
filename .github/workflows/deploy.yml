@@ -93,14 +93,16 @@ jobs:
         run: |
           echo "Test de la connexion SSH en mode verbose..."
           ssh -vvv -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "ls -la"
+
       - name: Force remote directory creation
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "rm -rf /home/${{ secrets.HOSTINGER_USER }}/public_html && mkdir -p /home/${{ secrets.HOSTINGER_USER }}/public_html"
-      
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_HOST }} "rm -rf /home/${{ secrets.HOSTINGER_USER }}/domains/gitdiary.ch/public_html && mkdir -p /home/${{ secrets.HOSTINGER_USER }}/domains/gitdiary.ch/public_html"
+
       - name: Deploy with rsync
         run: |
           rsync -avz -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }}" \
-            ./public/ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:"/home/${{ secrets.HOSTINGER_USER }}/public_html/"
+            ./public/ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:"/home/${{ secrets.HOSTINGER_USER }}/domains/gitdiary.ch/public_html/"
+
         
         
 
