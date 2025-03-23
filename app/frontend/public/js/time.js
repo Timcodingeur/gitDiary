@@ -1,46 +1,24 @@
 const API_URL = 'https://api.gitdiary.ch';
 
 export async function addTimeToTheDatbase(hash, time) {
-  try {
-    const response = await fetch(`${API_URL}/add-time`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ hash, time }),
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
+  const response = await fetch(`${API_URL}/add-time`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ hash, time }),
+  });
+  if (!response.ok) {
+    console.error("Error adding time to the database:", response.statusText);
+  } else {
     console.log("Time spent added to the database.");
-  } catch (error) {
-    console.error("Error adding time to the database:", error);
-    throw error;
   }
 }
 
 export function handleClickCommit(td) {
   const time = prompt("Enter the time spent on this task (in minutes):");
-  if (!time) return; // Si l'utilisateur annule
-
-  const numTime = parseInt(time, 10);
-  if (isNaN(numTime) || numTime < 0) {
-    alert("Please enter a valid positive number");
-    return;
-  }
-
-  const hour = Math.floor(numTime / 60);
-  const minute = numTime % 60;
+  const hour = Math.floor(time / 60);
+  const minute = time % 60;
   td.textContent = `${hour}h ${minute} min`;
-  
-  // Récupérer le hash du commit
-  const hash = td.parentElement.querySelector("#commit-hash").textContent;
-  console.log('Adding time for commit:', hash);
-  
-  addTimeToTheDatbase(hash, numTime).catch(error => {
-    console.error('Error adding time:', error);
-    td.textContent = "Error saving time";
-  });
+  addTimeToTheDatbase(td.parentElement.firstChild.textContent, time);
 }
 
 export function formatDuration(duration) {

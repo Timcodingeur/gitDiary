@@ -161,135 +161,111 @@ export async function createTable(
   getSumCommitsTime,
   handleClickCommit
 ) {
-  console.log('Début de createTable');
   const container = document.querySelector(".container");
-  if (!container) {
-    console.error('Container not found in createTable');
-    return;
-  }
-
-  // Nettoyage du container
-  container.innerHTML = '';
-
-  console.log('Groupement des commits par date...');
-  const grouped = groupCommitsByDate(commits);
-  console.log('Nombre de jours:', Object.keys(grouped).length);
-
-  for (const [date, dailyCommits] of Object.entries(grouped)) {
-    try {
-      console.log(`Création du tableau pour ${date} avec ${dailyCommits.length} commits`);
+  if (container) {
+    const grouped = groupCommitsByDate(commits);
+    for (const [date, dailyCommits] of Object.entries(grouped)) {
       const dayDiv = document.createElement("div");
       dayDiv.className = "day-commits";
       const dateHeader = document.createElement("h2");
       dateHeader.textContent = date;
       dayDiv.appendChild(dateHeader);
 
-      // Création du tableau
       const table = document.createElement("table");
       const thead = document.createElement("thead");
       const tbody = document.createElement("tbody");
       const headerRow = document.createElement("tr");
 
-      // En-têtes
-      const headers = ["Hash", "Author", "Date", "Message", "Duration"];
-      headers.forEach((text, index) => {
-        const th = document.createElement("th");
-        th.textContent = text;
-        th.id = headers[index].toLowerCase();
-        headerRow.appendChild(th);
-      });
+      const th1 = document.createElement("th");
+      th1.textContent = "Hash";
+      th1.id = "hash";
+      const th2 = document.createElement("th");
+      th2.textContent = "Author";
+      th2.id = "author";
+      const th3 = document.createElement("th");
+      th3.textContent = "Date";
+      th3.id = "date";
+      const th4 = document.createElement("th");
+      th4.textContent = "Message";
+      th4.id = "message";
+      const th5 = document.createElement("th");
+      th5.textContent = "Duration";
+      th5.id = "duration";
 
+      headerRow.appendChild(th1);
+      headerRow.appendChild(th2);
+      headerRow.appendChild(th3);
+      headerRow.appendChild(th4);
+      headerRow.appendChild(th5);
       thead.appendChild(headerRow);
       table.appendChild(thead);
 
-      // Lignes de commits
       for (const commit of dailyCommits) {
-        console.log(`Traitement du commit ${commit.sha}`);
+        const response = await fetch(
+          "https://api.gitdiary.ch/get-time/" + commit.sha,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        const minutes = data[0]?.time || "";
+        let timeStr = "";
+        if (minutes !== "") {
+          const hr = Math.floor(minutes / 60);
+          const min = minutes % 60;
+          timeStr = `${hr}h ${min} min`;
+        }
         const row = document.createElement("tr");
         row.id = "commit-content";
-
-        let timeStr = "";
-        try {
-          // Récupération du temps
-          const response = await fetch(
-            `https://api.gitdiary.ch/get-time/${commit.sha}`,
-            {
-              method: "GET",
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-          
-          if (response.ok) {
-            const data = await response.json();
-            const minutes = data[0]?.time || 0;
-            timeStr = minutes ? `${Math.floor(minutes / 60)}h ${minutes % 60} min` : "Click to add time";
-          } else {
-            console.warn(`Couldn't get time for commit ${commit.sha}`);
-            timeStr = "Click to add time";
-          }
-        } catch (error) {
-          console.error(`Error fetching time for commit ${commit.sha}:`, error);
-          timeStr = "Click to add time";
-        }
-
-        // Création des cellules
-        const cells = [
-          { id: "commit-hash", content: commit.sha.substring(0, 7) },
-          { id: "commit-author", content: commit.commit.author.name },
-          { id: "commit-date", content: new Date(commit.commit.author.date).toLocaleString() },
-          { id: "commit-message", content: commit.commit.message },
-          { id: "commit-duration", content: timeStr }
-        ];
-
-        cells.forEach(({ id, content }) => {
-          const td = document.createElement("td");
-          td.id = id;
-          td.textContent = content;
-          if (id === "commit-duration") {
-            td.style.cursor = "pointer";
-            td.addEventListener("click", () => handleClickCommit(td));
-          }
-          row.appendChild(td);
-        });
-
+        const td1 = document.createElement("td");
+        td1.id = "commit-hash";
+        const td2 = document.createElement("td");
+        td2.id = "commit-author";
+        const td3 = document.createElement("td");
+        td3.id = "commit-date";
+        const td4 = document.createElement("td");
+        td4.id = "commit-message";
+        const td5 = document.createElement("td");
+        td5.id = "commit-duration";
+        td5.addEventListener("click", () => handleClickCommit(td5));
+        td1.textContent = commit.sha;
+        td2.textContent = commit.commit.author.name;
+        td3.textContent = new Date(commit.commit.author.date).toLocaleString();
+        td4.textContent = commit.commit.message;
+        td5.textContent = timeStr;
+        row.appendChild(td1);
+        row.appendChild(td2);
+        row.appendChild(td3);
+        row.appendChild(td4);
+        row.appendChild(td5);
         tbody.appendChild(row);
       }
 
-      // Ligne total
-      const totalRow = await createTotalRow(dailyCommits, getSumCommitsTime);
+      const totalRow = document.createElement("tr");
+      totalRow.id = "day-total-time";
+      const tdTotal1 = document.createElement("td");
+      tdTotal1.id = "day-total";
+      const tdTotal2 = document.createElement("td");
+      const tdTotal3 = document.createElement("td");
+      const tdTotal4 = document.createElement("td");
+      const tdTotal5 = document.createElement("td");
+      tdTotal5.id = "day-total-duration";
+      tdTotal1.textContent = "Total";
+      tdTotal5.textContent = await getSumCommitsTime(dailyCommits);
+      totalRow.appendChild(tdTotal1);
+      totalRow.appendChild(tdTotal2);
+      totalRow.appendChild(tdTotal3);
+      totalRow.appendChild(tdTotal4);
+      totalRow.appendChild(tdTotal5);
       tbody.appendChild(totalRow);
 
       table.appendChild(tbody);
       dayDiv.appendChild(table);
       container.appendChild(dayDiv);
-
-    } catch (error) {
-      console.error('Erreur lors de la création du tableau:', error);
     }
   }
-  console.log('Fin de createTable');
-}
-
-function createTotalRow(commits, getSumCommitsTime) {
-  return new Promise(async (resolve) => {
-    const totalRow = document.createElement("tr");
-    totalRow.id = "day-total-time";
-    
-    const cells = [
-      { content: "Total", id: "day-total" },
-      { content: "", id: "" },
-      { content: "", id: "" },
-      { content: "", id: "" },
-      { content: await getSumCommitsTime(commits), id: "day-total-duration" }
-    ];
-
-    cells.forEach(({ content, id }) => {
-      const td = document.createElement("td");
-      if (id) td.id = id;
-      td.textContent = content;
-      totalRow.appendChild(td);
-    });
-
-    resolve(totalRow);
-  });
 }
