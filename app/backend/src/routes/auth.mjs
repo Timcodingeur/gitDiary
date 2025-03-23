@@ -43,8 +43,8 @@ router.post('/oauth/github', async (req, res) => {
 
 router.get('/callback', (req, res) => {
   const code = req.query.code;
-  // Redirect to the correct frontend path
-  res.redirect(`http://127.0.0.1:5500/app/frontend/public/?code=${code}`);
+  // Mise à jour de la redirection vers le nouveau domaine
+  res.redirect(`https://gitdiary.ch/?code=${code}`);
 });
 
 export default router;
@@ -53,7 +53,8 @@ export const CLIENT_ID = process.env.APP_CLIENT_ID || "YOUR_CLIENT_ID";
 
 export async function startOAuth() {
   const clientId = CLIENT_ID;
-  const redirectUri = "http://localhost:8000/callback";
+  // Mise à jour de l'URL de redirection
+  const redirectUri = "https://api.gitdiary.ch/callback";
   const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=repo`;
   window.location.href = authUrl;
 }
@@ -66,7 +67,8 @@ export async function login() {
     return;
   }
   try {
-    const response = await fetch("/oauth/github", {
+    // Mise à jour de l'URL de l'API
+    const response = await fetch("https://api.gitdiary.ch/oauth/github", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code }),
