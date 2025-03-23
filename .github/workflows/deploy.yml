@@ -164,7 +164,7 @@ jobs:
 
             echo "🔄 Redémarrage avec PM2"
             pm2 delete gitdiary-backend || true
-            pm2 start index.js --name gitdiary-backend
+            pm2 start server.mjs --name gitdiary-backend --interpreter node
           EOF
 
 
