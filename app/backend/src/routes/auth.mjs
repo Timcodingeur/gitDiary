@@ -28,17 +28,23 @@ const currentConfig = config[env];
 router.post('/oauth/github', async (req, res) => {
   const { code } = req.body;
   
-  // Add this validation
+  console.log('Received code:', code);
+  console.log('Environment:', process.env.NODE_ENV);
+  console.log('Client ID exists:', !!process.env.APP_CLIENT_ID);
+  console.log('Client Secret exists:', !!process.env.APP_CLIENT_SECRET);
+  
   if (!code) {
+    console.log('No code provided');
     return res.status(400).json({ error: "No code provided" });
   }
 
-  // Add this validation
   if (!process.env.APP_CLIENT_ID || !process.env.APP_CLIENT_SECRET) {
+    console.log('Missing GitHub credentials');
     return res.status(500).json({ error: "GitHub OAuth credentials are undefined" });
   }
   
   try {
+    console.log('Attempting GitHub OAuth token exchange...');
     const response = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
       headers: {
@@ -53,10 +59,20 @@ router.post('/oauth/github', async (req, res) => {
     });
 
     const data = await response.json();
+    console.log('GitHub response:', data);
+    
+    if (data.error) {
+      console.error('GitHub OAuth error:', data.error);
+      return res.status(400).json({ error: data.error_description || data.error });
+    }
+    
     res.json(data);
   } catch (error) {
-    console.error('OAuth error:', error);
-    res.status(500).json({ error: 'Failed to authenticate with GitHub' });
+    console.error('OAuth error details:', error);
+    res.status(500).json({ 
+      error: 'Failed to authenticate with GitHub',
+      details: error.message 
+    });
   }
 });
 
