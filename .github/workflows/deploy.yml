@@ -93,6 +93,7 @@ jobs:
         run: |
           echo "Test de la connexion SSH en mode verbose..."
           ssh -vvv -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "ls -la"
+
       - name: Force remote directory creation
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "rm -rf /home/${{ secrets.HOSTINGER_USER }}/domains/gitdiary.ch/public_html/ && mkdir -p /home/${{ secrets.HOSTINGER_USER }}/domains/gitdiary.ch/public_html"
@@ -124,6 +125,9 @@ jobs:
           ssh-add ~/.ssh/deploy_key
           echo "Clés dans l'agent SSH :"
           ssh-add -l
+      - name: Test brute SSH without port
+        run: |
+          ssh -i ~/.ssh/deploy_key root@srv765930.hstgr.cloud "echo ✅ connexion réussie sans port"
 
       - name: Test SSH Connection
         run: |
