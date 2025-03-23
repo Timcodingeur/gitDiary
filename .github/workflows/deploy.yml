@@ -155,9 +155,9 @@ jobs:
             pm2 save
       
             echo "⚙️ Configuration PM2 au démarrage"
-            pm2 startup systemd -u $USER --hp $HOME > pm2_startup.sh
-            sudo bash pm2_startup.sh
+            eval "\$(pm2 startup systemd -u $USER --hp $HOME)"
           EOF
+          
           
         
 
