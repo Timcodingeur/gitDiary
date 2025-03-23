@@ -155,8 +155,10 @@ jobs:
             pm2 save
       
             echo "⚙️ Configuration PM2 au démarrage"
-            eval "\$(pm2 startup systemd -u $USER --hp $HOME)"
+            STARTUP_CMD=$(pm2 startup systemd -u $(whoami) --hp $(eval echo ~$USER) | tail -n 1)
+            eval "$STARTUP_CMD"
           EOF
+          
           
           
         
