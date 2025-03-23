@@ -70,35 +70,38 @@ jobs:
         working-directory: app/frontend
     steps:
       - uses: actions/checkout@v4
+        # On retire le paramètre ssh-keys pour éviter les interférences
 
-      - name: Setup SSH key
+      - name: Setup deploy key for SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/deploy_key
-          echo "Clé SSH ajoutée à l'agent ✅"
+          echo "Clés dans l'agent SSH :"
+          ssh-add -l
 
       - name: Add Hostinger to known_hosts
         run: |
           echo "Ajout de l'hôte ${{ secrets.HOSTINGER_HOST }} sur le port ${{ secrets.HOSTINGER_REMOTE_PORT }} aux known_hosts"
           ssh-keyscan -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts
+          echo "Contenu de known_hosts :"
+          cat ~/.ssh/known_hosts
 
       - name: Test SSH Connection with Debug (Verbose)
         run: |
-          ssh -vvv -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "ls -la"
-
+          echo "Test de la connexion SSH en mode verbose..."
+          ssh -vvv -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "ls -la"
       - name: Force remote directory creation
         run: |
-          ssh -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} \
-          "rm -rf /home/${{ secrets.HOSTINGER_USER }}/domains/gitdiary.ch/public_html && mkdir -p /home/${{ secrets.HOSTINGER_USER }}/domains/gitdiary.ch/public_html"
-
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "rm -rf /home/${{ secrets.HOSTINGER_USER }}/domains/gitdiary.ch/public_html/ && mkdir -p /home/${{ secrets.HOSTINGER_USER }}/domains/gitdiary.ch/public_html"
+      
       - name: Deploy with rsync
         run: |
-          rsync -avz -e "ssh -p ${{ secrets.HOSTINGER_REMOTE_PORT }}" \
+          rsync -avz -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }}" \
             ./public/ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:"/home/${{ secrets.HOSTINGER_USER }}/domains/gitdiary.ch/public_html/"
-      
+        
 
 
   deploy-backend:
@@ -114,10 +117,7 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/vps_key
           chmod 600 ~/.ssh/vps_key
           ssh-keyscan -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
-      - name: Test SSH manually
-        run: |
-          ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "echo 'Connexion réussie ✅'"
-        
+
       - name: Deploy backend to VPS
         run: |
           rsync -avz -e "ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_REMOTE_PORT }}" \
