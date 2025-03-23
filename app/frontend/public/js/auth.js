@@ -1,4 +1,5 @@
-import { default as initializeApp } from './main.js';
+// Remove the default import since main.js doesn't have a default export
+// import { default as initializeApp } from './main.js';
 
 const API = {
     BASE_URL: 'https://api.gitdiary.ch',
@@ -53,8 +54,9 @@ async function initializeAuth() {
         // Already authenticated
         document.getElementById('login-section').style.display = 'none';
         document.getElementById('main-section').style.display = 'block';
-        // Initialize main app if we have a token
-        await initializeApp();
+        // Import and call main function directly
+        const { main } = await import('./main.js');
+        await main();
         return;
     }
     
@@ -80,8 +82,9 @@ async function initializeAuth() {
                 // Show main section
                 document.getElementById('login-section').style.display = 'none';
                 document.getElementById('main-section').style.display = 'block';
-                // Initialize the main app
-                await initializeApp();
+                // Import and call main function directly
+                const { main } = await import('./main.js');
+                await main();
             }
         } catch (error) {
             console.error('Authentication error:', error);

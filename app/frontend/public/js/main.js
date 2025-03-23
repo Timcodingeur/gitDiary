@@ -1,7 +1,7 @@
 import { getUserInfo, getRepos } from "./github.js";
 import { handleClickCommits, handleClickIssues, logout } from "./handler.js";
 
-async function main() {
+export async function main() {
   const token = localStorage.getItem("github_token");
   if (!token) {
     document.getElementById("login-section").style.display = "block";
