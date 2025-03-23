@@ -168,64 +168,73 @@ export async function createTable(
     return;
   }
 
+  // Nettoyage du container
+  container.innerHTML = '';
+
   console.log('Groupement des commits par date...');
   const grouped = groupCommitsByDate(commits);
   console.log('Nombre de jours:', Object.keys(grouped).length);
 
   for (const [date, dailyCommits] of Object.entries(grouped)) {
-    console.log(`Création du tableau pour ${date} avec ${dailyCommits.length} commits`);
-    const dayDiv = document.createElement("div");
-    dayDiv.className = "day-commits";
-    const dateHeader = document.createElement("h2");
-    dateHeader.textContent = date;
-    dayDiv.appendChild(dateHeader);
-
-    // Création du tableau
-    const table = document.createElement("table");
-    const thead = document.createElement("thead");
-    const tbody = document.createElement("tbody");
-    const headerRow = document.createElement("tr");
-
-    // En-têtes
-    const headers = ["Hash", "Author", "Date", "Message", "Duration"];
-    headers.forEach((text, index) => {
-      const th = document.createElement("th");
-      th.textContent = text;
-      th.id = headers[index].toLowerCase();
-      headerRow.appendChild(th);
-    });
-
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    // Lignes de commits
     try {
+      console.log(`Création du tableau pour ${date} avec ${dailyCommits.length} commits`);
+      const dayDiv = document.createElement("div");
+      dayDiv.className = "day-commits";
+      const dateHeader = document.createElement("h2");
+      dateHeader.textContent = date;
+      dayDiv.appendChild(dateHeader);
+
+      // Création du tableau
+      const table = document.createElement("table");
+      const thead = document.createElement("thead");
+      const tbody = document.createElement("tbody");
+      const headerRow = document.createElement("tr");
+
+      // En-têtes
+      const headers = ["Hash", "Author", "Date", "Message", "Duration"];
+      headers.forEach((text, index) => {
+        const th = document.createElement("th");
+        th.textContent = text;
+        th.id = headers[index].toLowerCase();
+        headerRow.appendChild(th);
+      });
+
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      // Lignes de commits
       for (const commit of dailyCommits) {
         console.log(`Traitement du commit ${commit.sha}`);
         const row = document.createElement("tr");
         row.id = "commit-content";
 
-        // Récupération du temps
-        const response = await fetch(
-          `https://api.gitdiary.ch/get-time/${commit.sha}`,
-          {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
+        let timeStr = "";
+        try {
+          // Récupération du temps
+          const response = await fetch(
+            `https://api.gitdiary.ch/get-time/${commit.sha}`,
+            {
+              method: "GET",
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            const minutes = data[0]?.time || 0;
+            timeStr = minutes ? `${Math.floor(minutes / 60)}h ${minutes % 60} min` : "Click to add time";
+          } else {
+            console.warn(`Couldn't get time for commit ${commit.sha}`);
+            timeStr = "Click to add time";
           }
-        );
-        
-        if (!response.ok) {
-          console.error(`Erreur lors de la récupération du temps pour ${commit.sha}`);
-          continue;
+        } catch (error) {
+          console.error(`Error fetching time for commit ${commit.sha}:`, error);
+          timeStr = "Click to add time";
         }
-
-        const data = await response.json();
-        const minutes = data[0]?.time || "";
-        const timeStr = minutes ? `${Math.floor(minutes / 60)}h ${minutes % 60} min` : "";
 
         // Création des cellules
         const cells = [
-          { id: "commit-hash", content: commit.sha },
+          { id: "commit-hash", content: commit.sha.substring(0, 7) },
           { id: "commit-author", content: commit.commit.author.name },
           { id: "commit-date", content: new Date(commit.commit.author.date).toLocaleString() },
           { id: "commit-message", content: commit.commit.message },
@@ -237,6 +246,7 @@ export async function createTable(
           td.id = id;
           td.textContent = content;
           if (id === "commit-duration") {
+            td.style.cursor = "pointer";
             td.addEventListener("click", () => handleClickCommit(td));
           }
           row.appendChild(td);
