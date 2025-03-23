@@ -115,38 +115,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-
-      - name: Setup deploy key for SSH
+      - name: Setup SSH & Deploy Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/deploy_key
-          echo "Clés dans l'agent SSH :"
-          ssh-add -l
+          ssh-keyscan ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Add VPS to known_host
-        run: |
-          ssh-keyscan srv765930.hstgr.cloud >> ~/.ssh/known_hosts
-        
-      - name: Test brute SSH without port
-        run: |
-          ssh -i ~/.ssh/deploy_key root@srv765930.hstgr.cloud
-
-      - name: Test SSH Connection
-        run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "echo ✅ Connexion réussie"
-
-      - name: Deploy backend to VPS
+      - name: 🔁 Déploiement du code
         run: |
           rsync -avz -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }}" \
             ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_BACKEND_TARGET }}
 
-      - name: Install dependencies and launch backend
+      - name: 🚀 Installation & Lancement
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
-            mkdir -p ${{ secrets.VPS_BACKEND_TARGET }}
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
             cd ${{ secrets.VPS_BACKEND_TARGET }}
 
             if [ ! -d node_modules ]; then
@@ -166,6 +151,7 @@ jobs:
             pm2 delete gitdiary-backend || true
             pm2 start server.mjs --name gitdiary-backend --interpreter node
           EOF
+
 
 
 
