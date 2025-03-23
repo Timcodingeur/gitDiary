@@ -16,53 +16,10 @@
         <div class="container"></div>
     </div>
 
-    <!-- Ajout d'un div pour les messages d'erreur -->
-    <div id="error-message" style="display:none; color: red; padding: 10px;"></div>
-
-    <script>
-        // Gestionnaire d'erreurs global
-        window.onerror = function(msg, url, lineNo, columnNo, error) {
-            console.error('Error: ' + msg);
-            console.error('URL: ' + url);
-            console.error('Line: ' + lineNo);
-            console.error('Column: ' + columnNo);
-            console.error('Error object:', error);
-            
-            document.getElementById('error-message').textContent = 
-                `Une erreur est survenue: ${msg}`;
-            document.getElementById('error-message').style.display = 'block';
-            return false;
-        };
-
-        // Gestionnaire pour les promesses rejetées non gérées
-        window.addEventListener('unhandledrejection', function(event) {
-            console.error('Unhandled promise rejection:', event.reason);
-            document.getElementById('error-message').textContent = 
-                `Erreur de promesse: ${event.reason}`;
-            document.getElementById('error-message').style.display = 'block';
-        });
-    </script>
-
     <script type="module">
-        console.log('Chargement des modules...');
         import { startOAuth } from './js/auth.js';
-        console.log('Module auth.js chargé');
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM chargé');
-            const loginButton = document.getElementById('github-login');
-            if (loginButton) {
-                console.log('Bouton de login trouvé');
-                loginButton.addEventListener('click', () => {
-                    console.log('Clic sur le bouton de login');
-                    startOAuth();
-                });
-            } else {
-                console.error('Bouton de login non trouvé');
-            }
-        });
+        document.getElementById('github-login').addEventListener('click', startOAuth);
     </script>
-
     <script type="module" src="js/auth.js"></script>
     <script type="module" src="js/main.js"></script>
     <script type="module" src="js/handler.js"></script>
