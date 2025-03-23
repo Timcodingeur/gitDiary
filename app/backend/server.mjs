@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.use(cors({
-  origin: 'http://127.0.0.1:5500',
+  origin: 'https://gitdiary.ch',
   credentials: true
 }));
 app.use(express.json());
