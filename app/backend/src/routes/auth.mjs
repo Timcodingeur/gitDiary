@@ -6,6 +6,25 @@ dotenv.config();
 
 const router = express.Router();
 
+// Configuration selon l'environnement
+const config = {
+  development: {
+    frontendUrl: 'http://127.0.0.1:5500/app/frontend/public',
+    apiUrl: 'http://localhost:8000'
+  },
+  test: {
+    frontendUrl: 'http://127.0.0.1:5500/app/frontend/public',
+    apiUrl: 'http://localhost:8000'
+  },
+  production: {
+    frontendUrl: 'https://gitdiary.ch',
+    apiUrl: 'https://api.gitdiary.ch'
+  }
+};
+
+const env = process.env.NODE_ENV || 'development';
+const currentConfig = config[env];
+
 router.post('/oauth/github', async (req, res) => {
   const { code } = req.body;
   
@@ -43,8 +62,7 @@ router.post('/oauth/github', async (req, res) => {
 
 router.get('/callback', (req, res) => {
   const code = req.query.code;
-  // Mise à jour de la redirection vers le nouveau domaine
-  res.redirect(`https://gitdiary.ch/?code=${code}`);
+  res.redirect(`${currentConfig.frontendUrl}/?code=${code}`);
 });
 
 export default router;
@@ -53,8 +71,7 @@ export const CLIENT_ID = process.env.APP_CLIENT_ID || "YOUR_CLIENT_ID";
 
 export async function startOAuth() {
   const clientId = CLIENT_ID;
-  // Mise à jour de l'URL de redirection
-  const redirectUri = "https://api.gitdiary.ch/callback";
+  const redirectUri = `${currentConfig.apiUrl}/callback`;
   const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=repo`;
   window.location.href = authUrl;
 }
@@ -67,8 +84,7 @@ export async function login() {
     return;
   }
   try {
-    // Mise à jour de l'URL de l'API
-    const response = await fetch("https://api.gitdiary.ch/oauth/github", {
+    const response = await fetch(`${currentConfig.apiUrl}/oauth/github`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code }),
