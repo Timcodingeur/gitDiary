@@ -127,7 +127,7 @@ jobs:
           ssh-add -l
       - name: Test brute SSH without port
         run: |
-          ssh -i ~/.ssh/deploy_key root@srv765930.hstgr.cloud "echo ✅ connexion réussie sans port"
+          ssh -i ~/.ssh/deploy_key root@srv765930.hstgr.cloud
 
       - name: Test SSH Connection
         run: |
