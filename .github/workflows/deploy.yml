@@ -114,14 +114,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup SSH key
+
+      - name: Setup deploy key for SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/deploy_key
+          echo "Clés dans l'agent SSH :"
+          ssh-add -l
 
       - name: Test SSH Connection
         run: |
