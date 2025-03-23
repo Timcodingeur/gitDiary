@@ -119,19 +119,22 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/deploy_key
-          ssh-keyscan -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Test SSH Connection
+        run: |
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "echo ✅ Connexion réussie"
 
       - name: Deploy backend to VPS
         run: |
-          rsync -avz -e "ssh -p ${{ secrets.VPS_REMOTE_PORT }}" \
+          rsync -avz -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }}" \
             ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_BACKEND_TARGET }}
 
       - name: Install dependencies and launch backend
         run: |
-          ssh -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} bash -s << EOF
-            set -e
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
             mkdir -p ${{ secrets.VPS_BACKEND_TARGET }}
             cd ${{ secrets.VPS_BACKEND_TARGET }}
 
