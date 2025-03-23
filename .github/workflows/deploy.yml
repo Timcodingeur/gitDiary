@@ -108,24 +108,30 @@ jobs:
     name: "Deploy Backend to VPS"
     runs-on: ubuntu-latest
     needs: [test-unit]
+    defaults:
+      run:
+        working-directory: app/backend
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/vps_key
-          chmod 600 ~/.ssh/vps_key
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/deploy_key
           ssh-keyscan -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy backend to VPS
         run: |
-          rsync -avz -e "ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_REMOTE_PORT }}" \
-            ./app/backend/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_BACKEND_TARGET }}
+          rsync -avz -e "ssh -p ${{ secrets.VPS_REMOTE_PORT }}" \
+            ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_BACKEND_TARGET }}
 
       - name: Install dependencies and launch backend
         run: |
-          ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} bash -s << EOF
+            set -e
             mkdir -p ${{ secrets.VPS_BACKEND_TARGET }}
             cd ${{ secrets.VPS_BACKEND_TARGET }}
 
@@ -137,7 +143,6 @@ jobs:
               npm ci
             fi
 
-            # Redémarrage via PM2
             if ! command -v pm2 &> /dev/null; then
               echo "🚀 Installation de PM2"
               npm install -g pm2
@@ -147,5 +152,6 @@ jobs:
             pm2 delete gitdiary-backend || true
             pm2 start index.js --name gitdiary-backend
           EOF
+
 
 
