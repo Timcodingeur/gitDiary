@@ -154,6 +154,14 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
             cd ${{ secrets.VPS_BACKEND_TARGET }}
+            
+            # Vérifier que le fichier .env existe
+            if [ ! -f .env ]; then
+              echo "❌ Fichier .env manquant!"
+              exit 1
+            fi
+            
+            # Installation des dépendances
             if [ ! -d node_modules ]; then
               echo "🧪 Première installation — npm install"
               npm install
@@ -161,13 +169,17 @@ jobs:
               echo "🔁 Installation rapide — npm ci"
               npm ci
             fi
+            
+            # Installation et configuration de PM2
             if ! command -v pm2 &> /dev/null; then
               echo "🚀 Installation de PM2"
               npm install -g pm2
             fi
+            
+            # Redémarrage de l'application
             echo "🔄 Redémarrage avec PM2"
             pm2 delete gitdiary-backend || true
-            pm2 start server.mjs --name gitdiary-backend --interpreter node
+            NODE_ENV=production pm2 start server.mjs --name gitdiary-backend --interpreter node
           EOF
 
 
