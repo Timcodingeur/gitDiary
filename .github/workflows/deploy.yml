@@ -117,7 +117,10 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/vps_key
           chmod 600 ~/.ssh/vps_key
           ssh-keyscan -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
-
+      - name: Test SSH manually
+        run: |
+          ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "echo 'Connexion réussie ✅'"
+        
       - name: Deploy backend to VPS
         run: |
           rsync -avz -e "ssh -i ~/.ssh/vps_key -p ${{ secrets.VPS_REMOTE_PORT }}" \
