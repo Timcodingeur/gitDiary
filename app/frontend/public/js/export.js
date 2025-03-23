@@ -2,23 +2,37 @@
 import { createTableFactice } from "./table.js";  // Fix import path
 
 export async function exportToPdf() {
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF();
-  const divs = document.querySelectorAll(".day-commits");
-  const table =
-    divs.length === 0
+  try {
+    const { jsPDF } = window.jspdf;
+    if (!jsPDF) {
+      console.error('jsPDF not found');
+      return;
+    }
+
+    const pdf = new jsPDF();
+    const divs = document.querySelectorAll(".day-commits");
+    const table = divs.length === 0
       ? document.querySelector("table")
       : await createTableFactice();
-  pdf.autoTable({ html: table });
-  const blob = pdf.output("blob");
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = divs.length === 0 ? "issues.pdf" : "commits.pdf";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+
+    if (!table) {
+      console.error('No table found to export');
+      return;
+    }
+
+    pdf.autoTable({ html: table });
+    const blob = pdf.output("blob");
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = divs.length === 0 ? "issues.pdf" : "commits.pdf";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Error in exportToPdf:', error);
+  }
 }
 
 export async function exportToMarkdown() {
