@@ -22,7 +22,7 @@ const config = {
   }
 };
 
-const env = process.env.NODE_ENV || 'development';
+const env = process.env.NODE_ENV || 'production';
 const currentConfig = config[env];
 
 router.post('/oauth/github', async (req, res) => {
