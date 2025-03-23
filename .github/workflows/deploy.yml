@@ -125,6 +125,11 @@ jobs:
           ssh-add ~/.ssh/deploy_key
           echo "Clés dans l'agent SSH :"
           ssh-add -l
+
+      - name: Add VPS to known_host
+        run: |
+          ssh-keyscan srv765930.hstgr.cloud >> ~/.ssh/known_hosts
+        
       - name: Test brute SSH without port
         run: |
           ssh -i ~/.ssh/deploy_key root@srv765930.hstgr.cloud
