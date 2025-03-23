@@ -15,9 +15,16 @@ export function handleClickCommits(repos, token) {
         return;
       }
 
+      console.log('Nettoyage des anciens éléments...');
       // Nettoyage des anciens tableaux et boutons export
       document.querySelectorAll("table").forEach((table) => table.remove());
       document.querySelectorAll(".day-commits").forEach((dayDiv) => dayDiv.remove());
+      document.querySelectorAll("button").forEach((button) => {
+        if (button.textContent !== "Create table commits" && 
+            button.textContent !== "Create table issues") {
+          button.remove();
+        }
+      });
       
       // Sélection du repo
       const select = document.querySelector("select");
@@ -38,14 +45,21 @@ export function handleClickCommits(repos, token) {
       const commits = await getCommits(token, repo.owner.login, repo.name);
       console.log('Commits fetched:', commits.length);
 
+      console.log('Création du tableau...');
       // Création du tableau avec les commits
-      await createTable(
-        commits,
-        groupCommitsByDate,
-        getSumCommitsTime,
-        handleClickCommit
-      );
+      try {
+        await createTable(
+          commits,
+          groupCommitsByDate,
+          getSumCommitsTime,
+          handleClickCommit
+        );
+        console.log('Tableau créé avec succès');
+      } catch (error) {
+        console.error('Erreur lors de la création du tableau:', error);
+      }
 
+      console.log('Ajout des boutons d\'export...');
       // Ajout des boutons d'export
       const exportButtonPdf = document.createElement("button");
       exportButtonPdf.textContent = "Export to PDF";
@@ -64,6 +78,8 @@ export function handleClickCommits(repos, token) {
       exportButtonCsv.id = "export-csv";
       exportButtonCsv.addEventListener("click", exportToCsv);
       profileContainer.appendChild(exportButtonCsv);
+
+      console.log('Initialisation terminée');
 
     } catch (error) {
       console.error('Error in handleClickCommits:', error);
