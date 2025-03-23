@@ -1,7 +1,7 @@
 import { default as initializeApp } from './main.js';
 
 const API = {
-    BASE_URL: 'http://localhost:8000',
+    BASE_URL: 'https://api.gitdiary.ch',
     GITHUB_API: 'https://api.github.com',
 
     async getCommits(owner, repo) {
@@ -60,7 +60,7 @@ async function initializeAuth() {
     
     if (code) {
         try {
-            const response = await fetch('http://localhost:8000/oauth/github', {
+            const response = await fetch('https://api.gitdiary.ch/oauth/github', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -91,7 +91,7 @@ async function initializeAuth() {
 
 export async function startOAuth() {
     const clientId = 'Ov23li1L2rvL4GwFN9tQ';
-    const redirectUri = 'http://localhost:8000/callback';
+    const redirectUri = 'https://api.gitdiary.ch/callback';
     const scope = 'repo';
     const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
     window.location.href = authUrl;

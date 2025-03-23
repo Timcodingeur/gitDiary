@@ -202,7 +202,7 @@ export async function createTable(
 
       for (const commit of dailyCommits) {
         const response = await fetch(
-          "http://localhost:8000/get-time/" + commit.sha,
+          "https://api.gitdiary.ch/get-time/" + commit.sha,
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },

@@ -1,5 +1,5 @@
 const API = {
-    BASE_URL: 'http://localhost:8000',
+    BASE_URL: 'https://api.gitdiary.ch/',
     GITHUB_API: 'https://api.github.com',
   
     async getCommits(owner, repo) {

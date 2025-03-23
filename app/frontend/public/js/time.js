@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:8000';
+const API_URL = 'https://api.gitdiary.ch';
 
 export async function addTimeToTheDatbase(hash, time) {
   const response = await fetch(`${API_URL}/add-time`, {
