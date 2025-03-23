@@ -113,6 +113,8 @@ jobs:
     defaults:
       run:
         working-directory: app/backend
+    env:
+      NODE_ENV: production
     steps:
       - uses: actions/checkout@v4
 
@@ -125,9 +127,27 @@ jobs:
           ssh-add ~/.ssh/deploy_key
           ssh-keyscan ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      - name: 🔁 Déploiement du code
+      - name: 🔁 Déploiement du code et configuration
         run: |
-          rsync -avz -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }}" \
+          # Créer le fichier .env sur le serveur distant
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
+            cat > ${{ secrets.VPS_BACKEND_TARGET }}/.env << 'ENVFILE'
+            APP_CLIENT_ID=${{ secrets.APP_CLIENT_ID }}
+            APP_CLIENT_SECRET=${{ secrets.APP_CLIENT_SECRET }}
+            DB_HOST=${{ secrets.DB_HOST }}
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            DB_PORT=${{ secrets.DB_PORT }}
+            PORT=${{ secrets.PORT }}
+            NODE_ENV=production
+            ENVFILE
+
+            chmod 600 ${{ secrets.VPS_BACKEND_TARGET }}/.env
+          EOF
+
+          # Déployer le code
+          rsync -avz --exclude='.env' -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }}" \
             ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_BACKEND_TARGET }}
 
       - name: 🚀 Installation & Lancement
@@ -149,10 +169,10 @@ jobs:
             pm2 delete gitdiary-backend || true
             pm2 start server.mjs --name gitdiary-backend --interpreter node
           EOF
-          
-          
-          
-        
+
+
+
+
 
 
 
