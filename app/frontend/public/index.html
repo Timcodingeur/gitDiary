@@ -1,26 +1,33 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>Git Time Diary</title>
     <link rel="icon" type="image/svg+xml" href="./img/favicon.svg" />
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css" />
     <!-- Ajout de jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-</head>
-<body>
-    <div id="login-section">
+  </head>
+  <body>
+    <!-- On peut supprimer cette section puisqu'on ne l'utilisera plus -->
+    <!-- <div id="login-section">
         <button id="github-login">Connect with GitHub</button>
-    </div>
-    
-    <div id="main-section" style="display:none">
-        <h1>Git Time Diary</h1>
-        <div class="container"></div>
+    </div> -->
+
+    <div id="main-section" style="display: none">
+      <h1>Git Time Diary</h1>
+      <div class="container"></div>
     </div>
 
     <script type="module">
-        import { startOAuth } from './js/auth.js';
-        document.getElementById('github-login').addEventListener('click', startOAuth);
+      import { startOAuth, login } from "./js/auth.js";
+      // Démarrer automatiquement le processus d'authentification au chargement
+      window.addEventListener("DOMContentLoaded", () => {
+        const token = sessionStorage.getItem("token");
+        if (!token) {
+          startOAuth();
+        }
+      });
     </script>
     <script type="module" src="js/auth.js"></script>
     <script type="module" src="js/main.js"></script>
@@ -28,5 +35,5 @@
     <script type="module" src="js/github.js"></script>
     <script type="module" src="js/time.js"></script>
     <script type="module" src="js/export.js"></script>
-</body>
+  </body>
 </html>

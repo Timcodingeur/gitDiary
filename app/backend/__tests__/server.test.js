@@ -1,17 +1,18 @@
 // server.test.js
 import { describe, it, expect, beforeAll, afterAll, jest } from "@jest/globals";
 import request from "supertest";
-import { app, db } from "../server.mjs";
+import { app, pool } from "../server.mjs";
 
 describe("Server Tests", () => {
-  let dbQueryStub;
+  let poolExecuteStub;
 
   beforeAll(() => {
-    dbQueryStub = jest.spyOn(db, "query");
+    // Remplacer le mock de db.query par pool.execute
+    poolExecuteStub = jest.spyOn(pool, "execute");
   });
 
   afterAll(() => {
-    dbQueryStub.mockRestore();
+    poolExecuteStub.mockRestore();
   });
 
   // ----------- GET / -----------
@@ -19,7 +20,7 @@ describe("Server Tests", () => {
     it("should return API is running message", async () => {
       const res = await request(app).get("/");
       expect(res.status).toBe(200);
-      expect(res.text).toBe("API is running");  // Updated expectation
+      expect(res.text).toBe("API is running");
     });
   });
 
@@ -27,8 +28,10 @@ describe("Server Tests", () => {
   describe("GET /callback", () => {
     it("should redirect to frontend with code", async () => {
       const res = await request(app).get("/callback?code=test_code");
-      expect(res.status).toBe(302);  // Changed from 200 to 302 for redirect
-      expect(res.header.location).toBe("http://127.0.0.1:5500/app/frontend/public/?code=test_code");
+      expect(res.status).toBe(302); // Changed from 200 to 302 for redirect
+      expect(res.header.location).toBe(
+        "http://127.0.0.1:5500/app/frontend/public/?code=test_code"
+      );
     });
   });
 
@@ -40,9 +43,11 @@ describe("Server Tests", () => {
     });
 
     it("should attempt to exchange code for token", async () => {
-      const res = await request(app).post("/oauth/github").send({ code: "test_code" });
+      const res = await request(app)
+        .post("/oauth/github")
+        .send({ code: "test_code" });
       // Modifié pour accepter aussi le status 400 qui peut arriver quand GitHub rejette le code
-      expect([200, 400, 500]).toContain(res.status); 
+      expect([200, 400, 500]).toContain(res.status);
     });
   });
 
@@ -55,9 +60,7 @@ describe("Server Tests", () => {
     });
 
     it("should handle DB error on SELECT", async () => {
-      dbQueryStub.mockImplementation((query, values, callback) => {
-        callback(new Error("DB SELECT error"), null);
-      });
+      poolExecuteStub.mockRejectedValueOnce(new Error("DB SELECT error"));
 
       const res = await request(app)
         .post("/add-time")
@@ -67,13 +70,9 @@ describe("Server Tests", () => {
     });
 
     it("should update time if hash exists", async () => {
-      dbQueryStub
-        .mockImplementationOnce((query, values, callback) => {
-          callback(null, [{ hash: "abc", time: 5 }]);
-        })
-        .mockImplementationOnce((query, values, callback) => {
-          callback(null, { affectedRows: 1 });
-        });
+      poolExecuteStub
+        .mockResolvedValueOnce([[{ hash: "abc", time: 5 }]])
+        .mockResolvedValueOnce([{ affectedRows: 1 }]);
 
       const res = await request(app)
         .post("/add-time")
@@ -83,13 +82,9 @@ describe("Server Tests", () => {
     });
 
     it("should handle DB error on UPDATE", async () => {
-      dbQueryStub
-        .mockImplementationOnce((query, values, callback) => {
-          callback(null, [{ hash: "abc" }]);
-        })
-        .mockImplementationOnce((query, values, callback) => {
-          callback(new Error("DB UPDATE error"));
-        });
+      poolExecuteStub
+        .mockResolvedValueOnce([[{ hash: "abc" }]])
+        .mockRejectedValueOnce(new Error("DB UPDATE error"));
 
       const res = await request(app)
         .post("/add-time")
@@ -99,13 +94,9 @@ describe("Server Tests", () => {
     });
 
     it("should insert time if hash does not exist", async () => {
-      dbQueryStub
-        .mockImplementationOnce((query, values, callback) => {
-          callback(null, []);
-        })
-        .mockImplementationOnce((query, values, callback) => {
-          callback(null, { insertId: 123 });
-        });
+      poolExecuteStub
+        .mockResolvedValueOnce([[]])
+        .mockResolvedValueOnce([{ insertId: 123 }]);
 
       const res = await request(app)
         .post("/add-time")
@@ -115,13 +106,9 @@ describe("Server Tests", () => {
     });
 
     it("should handle DB error on INSERT", async () => {
-      dbQueryStub
-        .mockImplementationOnce((query, values, callback) => {
-          callback(null, []);
-        })
-        .mockImplementationOnce((query, values, callback) => {
-          callback(new Error("DB INSERT error"));
-        });
+      poolExecuteStub
+        .mockResolvedValueOnce([[]])
+        .mockRejectedValueOnce(new Error("DB INSERT error"));
 
       const res = await request(app)
         .post("/add-time")
@@ -140,9 +127,7 @@ describe("Server Tests", () => {
     });
 
     it("should handle DB error", async () => {
-      dbQueryStub.mockImplementation((query, values, callback) => {
-        callback(new Error("DB TIME error"), null);
-      });
+      poolExecuteStub.mockRejectedValueOnce(new Error("DB TIME error"));
 
       const res = await request(app).get("/get-time/somehash");
       expect(res.status).toBe(500);
@@ -150,9 +135,7 @@ describe("Server Tests", () => {
     });
 
     it("should return the time from DB", async () => {
-      dbQueryStub.mockImplementation((query, values, callback) => {
-        callback(null, [{ time: 123 }]);
-      });
+      poolExecuteStub.mockResolvedValueOnce([[{ time: 123 }]]);
 
       const res = await request(app).get("/get-time/somehash");
       expect(res.status).toBe(200);
@@ -192,7 +175,7 @@ describe("Server Tests", () => {
   // ----------- Global error handler -----------
   describe("Global error handler", () => {
     it("should handle unexpected errors", async () => {
-      dbQueryStub.mockImplementation(() => {
+      poolExecuteStub.mockImplementation(() => {
         throw new Error("Unexpected DB error");
       });
 
