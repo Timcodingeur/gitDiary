@@ -18,11 +18,11 @@ const __dirname = path.dirname(__filename);
 
 // Configuration du pool de connexions
 export const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "test",
+  password: process.env.DB_PASSWORD || "test",
+  database: process.env.DB_NAME || "test",
+  port: process.env.DB_PORT || 3306,
   waitForConnections: true,
   connectionLimit: 10, // Nombre maximum de connexions dans le pool
   queueLimit: 0, // Nombre illimité de connexions en attente
@@ -32,13 +32,21 @@ export const pool = mysql.createPool({
 
 // Vérification de la connexion du pool
 async function testConnection() {
+  if (process.env.NODE_ENV === "test") {
+    console.log("Skipping database connection in test environment");
+    return;
+  }
+
   try {
     const connection = await pool.getConnection();
     console.log("Successfully connected to the MySQL database via pool.");
     connection.release();
   } catch (err) {
     console.error("Error connecting to the database:", err.message);
-    process.exit(1);
+    // Ne pas quitter en mode test
+    if (process.env.NODE_ENV !== "test") {
+      process.exit(1);
+    }
   }
 }
 
