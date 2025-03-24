@@ -124,7 +124,7 @@ npm run start:dev
 
 Pour utiliser l'application :
 
-* Allez sur `http://localhost:8000`
+* Allez sur `http://localhost:8000` ou en prod `https://gitdiary.ch`
 * Connectez-vous avec votre compte github et amusez-vous !
 
 ---
