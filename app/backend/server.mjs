@@ -12,8 +12,9 @@ dotenv.config();
 export const app = express();
 const PORT = 8000;
 
+// Correction de la définition de __dirname pour ES modules
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__dirname);
+const __dirname = path.dirname(__filename);
 
 // Configuration du pool de connexions
 export const pool = mysql.createPool({
