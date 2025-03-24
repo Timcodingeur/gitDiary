@@ -1,25 +1,5 @@
-import dotenv from "dotenv";
-
-dotenv.config();
-
-// Configuration selon l'environnement
-const config = {
-  development: {
-    frontendUrl: "http://127.0.0.1:5500/app/frontend/public",
-    apiUrl: "http://localhost:8000",
-  },
-  test: {
-    frontendUrl: "http://127.0.0.1:5500/app/frontend/public",
-    apiUrl: "http://localhost:8000",
-  },
-  production: {
-    frontendUrl: "https://gitdiary.ch",
-    apiUrl: "https://api.gitdiary.ch",
-  },
-};
-
-const env = process.env.NODE_ENV || "production";
-const currentConfig = config[env];
+// Remove the default import since main.js doesn't have a default export
+// import { default as initializeApp } from './main.js';
 
 const API = {
   BASE_URL: "https://api.gitdiary.ch",
@@ -67,73 +47,59 @@ const API = {
   },
 };
 
-export async function startOAuth() {
-  const clientId = "Ov23li1L2rvL4GwFN9tQ";
-  const redirectUri = `${currentConfig.apiUrl}/callback`;
-  const scope = "repo";
-  const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
-  window.location.href = authUrl;
-}
-
-export async function login() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const code = urlParams.get("code");
-
-  if (!code) {
-    startOAuth();
-    return;
-  }
-
-  try {
-    const response = await fetch(`${currentConfig.apiUrl}/oauth/github`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch access token");
-    }
-
-    const data = await response.json();
-    const token = data.access_token;
-    localStorage.setItem("github_token", token);
-    window.location.href = "/";
-  } catch (error) {
-    console.error("Error during login:", error);
-    const errorMessage = document.getElementById("error-message");
-    if (errorMessage) {
-      errorMessage.style.display = "block";
-      errorMessage.textContent = `Erreur d'authentification: ${error.message}`;
-    }
-  }
-}
-
-// Initialize auth on page load
-document.addEventListener("DOMContentLoaded", async () => {
+// Initialize function to check auth status
+async function initializeAuth() {
   try {
     const token = localStorage.getItem("github_token");
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get("code");
 
     if (token) {
-      const mainSection = document.getElementById("main-section");
-      const loginSection = document.getElementById("login-section");
-
-      if (mainSection) mainSection.style.display = "block";
-      if (loginSection) loginSection.style.display = "none";
+      document.getElementById("login-section").style.display = "none";
+      document.getElementById("main-section").style.display = "block";
       return;
     }
 
     if (code) {
-      await login();
+      const response = await fetch("https://api.gitdiary.ch/oauth/github", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to exchange code for token");
+      }
+
+      const data = await response.json();
+      if (data.access_token) {
+        localStorage.setItem("github_token", data.access_token);
+        window.history.replaceState({}, document.title, "/");
+        document.getElementById("login-section").style.display = "none";
+        document.getElementById("main-section").style.display = "block";
+      } else {
+        throw new Error("No access token received");
+      }
     }
   } catch (error) {
     console.error("Authentication error:", error);
-    const errorMessage = document.getElementById("error-message");
-    if (errorMessage) {
-      errorMessage.textContent = `Erreur d'authentification: ${error.message}`;
-      errorMessage.style.display = "block";
-    }
+    document.getElementById(
+      "error-message"
+    ).textContent = `Erreur d'authentification: ${error.message}`;
+    document.getElementById("error-message").style.display = "block";
   }
-});
+}
+
+export async function startOAuth() {
+  const clientId = "Ov23li1L2rvL4GwFN9tQ";
+  const redirectUri = "https://api.gitdiary.ch/callback";
+  const scope = "repo";
+  const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
+  window.location.href = authUrl;
+}
+
+// Initialize auth on page load
+document.addEventListener("DOMContentLoaded", initializeAuth);
