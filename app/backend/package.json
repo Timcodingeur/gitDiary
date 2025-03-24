@@ -11,7 +11,7 @@
     "start:prod": "NODE_ENV=production node server.js",
     "test:e2e:dev": "cypress open",
     "test:e2e:ci": "cypress run",
-    "test:ci": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.mjs --runInBand --verbose --coverage --ci --silent --detectOpenHandles --forceExit"
+    "test:ci": "NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.mjs --runInBand --verbose --coverage --ci --silent --detectOpenHandles --forceExit"
   },
   "dependencies": {
     "cors": "^2.8.5",
