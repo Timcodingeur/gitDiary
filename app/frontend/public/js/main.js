@@ -3,18 +3,28 @@ import { handleClickCommits, handleClickIssues, logout } from "./handler.js";
 
 export async function main() {
   const token = localStorage.getItem("github_token");
-  if (!token) {
-    document.getElementById("login-section").style.display = "block";
-    document.getElementById("main-section").style.display = "none";
+  const loginSection = document.getElementById("login-section");
+  const mainSection = document.getElementById("main-section");
+
+  // Vérifier si les éléments existent
+  if (!loginSection || !mainSection) {
+    console.error("Éléments HTML manquants");
     return;
   }
-  document.getElementById("login-section").style.display = "none";
-  document.getElementById("main-section").style.display = "block";
+
+  if (!token) {
+    loginSection.style.display = "block";
+    mainSection.style.display = "none";
+    return;
+  }
+
+  loginSection.style.display = "none";
+  mainSection.style.display = "block";
 
   const userInfo = await getUserInfo(token);
   const repos = await getRepos(token);
 
-  const container = document.querySelector(".container") || document.getElementById("main-section");
+  const container = document.querySelector(".container") || mainSection;
   if (container) {
     const profileContainer = document.createElement("div");
     profileContainer.className = "profile-container";
@@ -75,4 +85,5 @@ export async function main() {
   }
 }
 
-main();
+// Attendre que le DOM soit chargé avant d'exécuter main()
+document.addEventListener("DOMContentLoaded", main);
