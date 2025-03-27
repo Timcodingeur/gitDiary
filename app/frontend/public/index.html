@@ -9,10 +9,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   </head>
   <body>
-    <!-- On peut supprimer cette section puisqu'on ne l'utilisera plus -->
-    <!-- <div id="login-section">
-        <button id="github-login">Connect with GitHub</button>
-    </div> -->
+    <div id="login-section">
+      <button id="github-login">Connect with GitHub</button>
+    </div>
 
     <div id="main-section" style="display: none">
       <h1>Git Time Diary</h1>
@@ -21,10 +20,17 @@
 
     <script type="module">
       import { startOAuth, login } from "./js/auth.js";
-      // Démarrer automatiquement le processus d'authentification au chargement
-      window.addEventListener("DOMContentLoaded", () => {
-        const token = sessionStorage.getItem("token");
-        if (!token) {
+
+      // Exécuter une seule fois au chargement
+      document.addEventListener("DOMContentLoaded", async () => {
+        const token = localStorage.getItem("github_token");
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get("code");
+
+        if (!token && !code) {
+          const loginButton = document.getElementById("github-login");
+          loginButton.addEventListener("click", startOAuth);
+          // Démarrer automatiquement l'authentification
           startOAuth();
         }
       });
