@@ -120,8 +120,6 @@ jobs:
         env:
           APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
           APP_CLIENT_SECRET: ${{ secrets.APP_CLIENT_SECRET }}
-          # ATTENTION : Mettez ici le VRAI nom de votre conteneur DB (ex: db_container ou gitdiary-db)
-          # D'après vos logs précédents, il s'appelle 'db_container'
           DB_HOST: db_container
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -133,7 +131,10 @@ jobs:
             set -e
             cd ${{ secrets.VPS_BACKEND_TARGET }}
 
-            # 1. Création du .env (On s'assure de bien fermer les redirections)
+            # NETTOYAGE CRITIQUE : On supprime le .env à la racine qui bloque Docker Compose
+            rm -f .env
+
+            # 1. Création du .env dans le sous-dossier app/backend
             echo "APP_CLIENT_ID=$APP_CLIENT_ID" > app/backend/.env
             echo "APP_CLIENT_SECRET=$APP_CLIENT_SECRET" >> app/backend/.env
             echo "DB_HOST=$DB_HOST" >> app/backend/.env
@@ -147,8 +148,6 @@ jobs:
             # 2. Gestion du réseau Docker
             echo "Configuration du réseau..."
             docker network create gitdiary-network || true
-            
-            # Connexion de la DB au réseau (ignore l'erreur si déjà connecté ou si le conteneur n'existe pas encore)
             docker network connect gitdiary-network $DB_HOST || true
 
             # 3. Lancement
