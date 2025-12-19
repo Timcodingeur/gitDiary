@@ -121,8 +121,7 @@ jobs:
         env:
           APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
           APP_CLIENT_SECRET: ${{ secrets.APP_CLIENT_SECRET }}
-          # Important: DB_HOST doit être le nom du container DB ou son IP dans le réseau Docker
-          DB_HOST: gitdiary-db
+          DB_HOST: db_container
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
@@ -130,29 +129,27 @@ jobs:
           PORT: 3000
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
+            set -e # Arrêter le script si une commande échoue
             cd ${{ secrets.VPS_BACKEND_TARGET }}
 
-            # 1. Création du .env pour le backend
-            cat > app/backend/.env <<ENV
-            APP_CLIENT_ID=$APP_CLIENT_ID
-            APP_CLIENT_SECRET=$APP_CLIENT_SECRET
-            DB_HOST=$DB_HOST
-            DB_USER=$DB_USER
-            DB_PASSWORD=$DB_PASSWORD
-            DB_NAME=$DB_NAME
-            DB_PORT=$DB_PORT
-            PORT=$PORT
-            NODE_ENV=production
-            ENV
+            # 1. Création du .env pour le backend (Méthode sûre avec echo)
+            echo "APP_CLIENT_ID=$APP_CLIENT_ID" > app/backend/.env
+            echo "APP_CLIENT_SECRET=$APP_CLIENT_SECRET" >> app/backend/.env
+            echo "DB_HOST=$DB_HOST" >> app/backend/.env
+            echo "DB_USER=$DB_USER" >> app/backend/.env
+            echo "DB_PASSWORD=$DB_PASSWORD" >> app/backend/.env
+            echo "DB_NAME=$DB_NAME" >> app/backend/.env
+            echo "DB_PORT=$DB_PORT" >> app/backend/.env
+            echo "PORT=$PORT" >> app/backend/.env
+            echo "NODE_ENV=production" >> app/backend/.env
 
             # 2. Gestion du réseau Docker
-            # On s'assure que le réseau existe pour relier le backend à la DB existante
+            echo "Configuration du réseau..."
             docker network create gitdiary-network || true
-            
-            # On connecte la DB existante au réseau si ce n'est pas déjà fait
             docker network connect gitdiary-network gitdiary-db || true
 
             # 3. Lancement avec Docker Compose
+            echo "Redémarrage des conteneurs..."
             docker compose down --remove-orphans || true
             docker compose up -d --build --remove-orphans
             
