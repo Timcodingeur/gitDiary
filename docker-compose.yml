@@ -1,0 +1,17 @@
+services:
+  backend:
+    # Le chemin vers le dossier contenant le Dockerfile
+    build: ./app/backend
+    container_name: gitdiary-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    # Le fichier .env est généré par le workflow GitHub Actions
+    env_file:
+      - ./app/backend/.env
+    networks:
+      - gitdiary-network
+
+networks:
+  gitdiary-network:
+    external: true

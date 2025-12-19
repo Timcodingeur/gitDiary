@@ -1,5 +1,5 @@
-name: Deploy to Hostinger
-run-name: ${{ github.actor }} is running the CI/CD 🚀
+name: Deploy to Production
+run-name: ${{ github.actor }} is deploying GitDiary 🚀
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
       - main
 
 jobs:
+  # ===================== AUDIT & TEST =====================
   audit-backend:
     name: "Backend Audit"
     runs-on: ubuntu-latest
@@ -32,9 +33,10 @@ jobs:
         working-directory: app/backend
     services:
       mysql:
-        image: mysql:latest
+        image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: gitdiary_test
         ports:
           - 3306:3306
         options: >-
@@ -45,12 +47,12 @@ jobs:
     env:
       APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
       APP_CLIENT_SECRET: ${{ secrets.APP_CLIENT_SECRET }}
-      DB_HOST: ${{ secrets.DB_HOST }}
-      DB_USER: ${{ secrets.DB_USER }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_NAME: ${{ secrets.DB_NAME }}
-      DB_PORT: ${{ secrets.DB_PORT }}
-      PORT: ${{ secrets.PORT }}
+      DB_HOST: 127.0.0.1
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: gitdiary_test
+      DB_PORT: 3306
+      PORT: 3000
       NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
@@ -62,6 +64,7 @@ jobs:
       - run: npm ci
       - run: npm run test:ci
 
+  # ===================== DEPLOY FRONTEND =====================
   deploy-frontend:
     name: "Deploy Frontend to Hostinger"
     runs-on: ubuntu-latest
@@ -71,41 +74,28 @@ jobs:
         working-directory: app/frontend
     steps:
       - uses: actions/checkout@v4
-        # On retire le paramètre ssh-keys pour éviter les interférences
 
-      - name: Setup deploy key for SSH
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/deploy_key
-          echo "Clés dans l'agent SSH :"
-          ssh-add -l
-
-      - name: Add Hostinger to known_hosts
-        run: |
-          echo "Ajout de l'hôte ${{ secrets.HOSTINGER_HOST }} sur le port ${{ secrets.HOSTINGER_REMOTE_PORT }} aux known_hosts"
           ssh-keyscan -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts
-          echo "Contenu de known_hosts :"
-          cat ~/.ssh/known_hosts
-
-      - name: Test SSH Connection with Debug (Verbose)
-        run: |
-          echo "Test de la connexion SSH en mode verbose..."
-          ssh -vvv -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "ls -la"
-
-      - name: Force remote directory creation
-        run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }} ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} "rm -rf /home/${{ secrets.HOSTINGER_USER }}/domains/gitdiary.ch/public_html/ && mkdir -p /home/${{ secrets.HOSTINGER_USER }}/domains/gitdiary.ch/public_html"
 
       - name: Deploy with rsync
         run: |
           rsync -avz -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.HOSTINGER_REMOTE_PORT }}" \
             ./public/ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:"/home/${{ secrets.HOSTINGER_USER }}/domains/gitdiary.ch/public_html/"
 
+      - name: Ping Search Engines
+        run: |
+          curl -s "https://www.google.com/ping?sitemap=https://gitdiary.ch/sitemap.xml" || true
+
+  # ===================== DEPLOY BACKEND (DOCKER) =====================
   deploy-backend:
-    name: "Deploy Backend to VPS"
+    name: "Deploy Backend to VPS (Docker)"
     runs-on: ubuntu-latest
     needs: [test-unit]
     steps:
@@ -120,17 +110,52 @@ jobs:
           ssh-add ~/.ssh/deploy_key
           ssh-keyscan ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      # On ne crée PLUS le .env ici
-      - name: Deploy code
+      - name: Sync Code
         run: |
-          # On exclut le .env pour ne pas écraser celui du serveur
-          rsync -avz --exclude='.env' -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }}" \
-            ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_BACKEND_TARGET }}
+          # On envoie tout le dossier app/backend et le docker-compose.yml
+          rsync -avz --exclude='.git' --exclude='node_modules' --exclude='.env' \
+            -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }}" \
+            ./app/backend ./docker-compose.yml ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_BACKEND_TARGET }}
 
-      - name: Restart Application
+      - name: Configure Env & Start Docker
+        env:
+          APP_CLIENT_ID: ${{ secrets.APP_CLIENT_ID }}
+          APP_CLIENT_SECRET: ${{ secrets.APP_CLIENT_SECRET }}
+          # Important: DB_HOST doit être le nom du container DB ou son IP dans le réseau Docker
+          DB_HOST: gitdiary-db
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_PORT: 3306
+          PORT: 3000
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
             cd ${{ secrets.VPS_BACKEND_TARGET }}
-            npm ci
-            pm2 restart gitdiary-backend || pm2 start server.mjs --name gitdiary-backend
+
+            # 1. Création du .env pour le backend
+            cat > app/backend/.env <<ENV
+            APP_CLIENT_ID=$APP_CLIENT_ID
+            APP_CLIENT_SECRET=$APP_CLIENT_SECRET
+            DB_HOST=$DB_HOST
+            DB_USER=$DB_USER
+            DB_PASSWORD=$DB_PASSWORD
+            DB_NAME=$DB_NAME
+            DB_PORT=$DB_PORT
+            PORT=$PORT
+            NODE_ENV=production
+            ENV
+
+            # 2. Gestion du réseau Docker
+            # On s'assure que le réseau existe pour relier le backend à la DB existante
+            docker network create gitdiary-network || true
+            
+            # On connecte la DB existante au réseau si ce n'est pas déjà fait
+            docker network connect gitdiary-network gitdiary-db || true
+
+            # 3. Lancement avec Docker Compose
+            docker compose down --remove-orphans || true
+            docker compose up -d --build --remove-orphans
+            
+            # Nettoyage
+            docker system prune -f
           EOF
