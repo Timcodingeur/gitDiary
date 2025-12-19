@@ -108,12 +108,14 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/deploy_key
-          ssh-keyscan ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          # CORRECTION : Ajout du port (-p) pour ssh-keyscan
+          ssh-keyscan -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
       - name: Sync Code
         run: |
-          # On envoie tout le dossier app/backend et le docker-compose.yml
-          rsync -avz --exclude='.git' --exclude='node_modules' --exclude='.env' \
+          # CORRECTION : Ajout de -R pour conserver la structure 'app/backend'
+          # Cela permet au docker-compose.yml de trouver le dossier au bon endroit (./app/backend)
+          rsync -avzR --exclude='.git' --exclude='node_modules' --exclude='.env' \
             -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }}" \
             ./app/backend ./docker-compose.yml ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_BACKEND_TARGET }}
 
