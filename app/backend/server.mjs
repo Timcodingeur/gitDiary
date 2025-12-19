@@ -53,12 +53,26 @@ async function testConnection() {
 // Test initial de la connexion
 testConnection();
 
+// AJOUT : Logs détaillés pour le démarrage
+console.log("=== GitDiary Backend Starting ===");
+console.log("Environment:", process.env.NODE_ENV || "production");
+console.log("Database Host:", process.env.DB_HOST);
+console.log("Database Name:", process.env.DB_NAME);
+console.log("Server Port:", PORT);
+
 app.use(
   cors({
     origin: "https://gitdiary.ch",
     credentials: true,
   })
 );
+
+// AJOUT : Log de toutes les requêtes
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
+
 app.use(express.json());
 
 // Routes

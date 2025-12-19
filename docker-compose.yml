@@ -5,7 +5,8 @@ services:
     container_name: gitdiary-backend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      # CORRECTION : Mapper le port 8000 au lieu de 3000
+      - "8000:8000"
     # Le fichier .env est généré par le workflow GitHub Actions
     env_file:
       - ./app/backend/.env

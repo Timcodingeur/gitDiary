@@ -14,7 +14,7 @@ RUN npm ci --only=production
 COPY . .
 
 # Exposer le port sur lequel l'app tourne
-EXPOSE 3000
+EXPOSE 8000
 
 # Commande de démarrage
 CMD ["npm", "start"]

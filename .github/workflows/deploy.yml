@@ -126,7 +126,8 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_PORT: 3306
-          PORT: 3000
+          # CORRECTION : Port 8000 au lieu de 3000
+          PORT: 8000
         run: |
           ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
             set -e
