@@ -108,6 +108,7 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/deploy_key
+          # CORRECTION : Ajout du port comme dans deploy-frontend
           ssh-keyscan -p ${{ secrets.VPS_REMOTE_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
       - name: Sync Code
