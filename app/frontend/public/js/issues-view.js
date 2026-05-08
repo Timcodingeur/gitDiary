@@ -2,7 +2,11 @@
 
 // Stocke les issues actuellement affichées (pour les exports).
 export let currentIssues = [];
-export function setCurrentIssues(list) { currentIssues = list || []; }
+export let currentSchedules = new Map();
+export function setCurrentIssues(list, schedules) {
+  currentIssues = list || [];
+  if (schedules instanceof Map) currentSchedules = schedules;
+}
 
 const STATE_COLUMNS = [
   { key: "open", label: "À faire / Ouvertes", match: (i) => i.state === "open" && !hasLabel(i, ["in progress", "doing", "wip"]) },
@@ -80,10 +84,10 @@ function fmtDate(iso) {
 // ─────────────────────────────────────────────
 // Vue cartes (user stories)
 // ─────────────────────────────────────────────
-export function createIssuesCards(issues) {
+export function createIssuesCards(issues, schedules) {
   const container = document.querySelector(".container");
   if (!container) return;
-  setCurrentIssues(issues);
+  setCurrentIssues(issues, schedules);
 
   const wrap = document.createElement("div");
   wrap.className = "issues-cards-wrap";

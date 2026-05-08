@@ -37,26 +37,36 @@ function escHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
-function buildTasks(issues) {
+// Stratégie de dates inspirée du script Python :
+//  1. Champs Project v2 custom (Start date / Target date) — passés via `schedules` Map
+//  2. Milestone due_on → end date
+//  3. Fallback : created_at → closed_at (ou +7 jours si encore ouverte)
+function buildTasks(issues, schedules = new Map()) {
   const tasks = [];
   const today = startOfDay(new Date());
   for (const issue of issues) {
     if (issue.pull_request) continue;
-    const start = parseISO(issue.created_at);
+
+    const sched = schedules.get(issue.number) || {};
+
+    // Start
+    let start = parseISO(sched.start) || parseISO(issue.created_at);
     if (!start) continue;
-    // Pour une issue ouverte → barre jusqu'à aujourd'hui (pour bien voir la durée).
-    // Pour une issue fermée → start → closed_at, mais minimum 2 jours visibles.
-    let end;
-    if (issue.state === "open") {
-      end = today;
-    } else {
-      end = parseISO(issue.closed_at) || parseISO(issue.updated_at) || today;
-    }
+
+    // End
+    let end =
+      parseISO(sched.end) ||
+      parseISO(issue.milestone?.due_on) ||
+      (issue.state === "closed" ? parseISO(issue.closed_at) : null);
+
+    // Fallback : ouverte sans planning → +7 jours depuis le start
+    if (!end) end = addDays(start, 7);
     if (end < start) end = start;
+
     let s = startOfDay(start);
     let e = startOfDay(end);
-    // Durée minimale de 2 jours pour rester visible quand tout se passe le même jour.
-    if (daysBetween(s, e) < 2) e = addDays(s, 2);
+    if (daysBetween(s, e) < 1) e = addDays(s, 1);
+
     tasks.push({
       number: issue.number,
       title: issue.title,
@@ -64,17 +74,16 @@ function buildTasks(issues) {
       state: issue.state,
       start: s,
       end: e,
-      sameDay: !issue.closed_at || daysBetween(startOfDay(start), startOfDay(end)) < 1,
-      author: issue.user?.login || "",
+      hasSchedule: !!(sched.start || sched.end),
+      sprint: sched.sprint || "",
+      estimate: sched.estimate ?? null,
+      source: sched.source || (issue.milestone?.due_on ? "milestone" : "issue-dates"),
       assignees: (issue.assignees || []).map((a) => a.login),
       labels: (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name)),
     });
   }
-  // Tri : par état (ouvertes d'abord), puis par date de création (asc)
-  tasks.sort((a, b) => {
-    if (a.state !== b.state) return a.state === "open" ? -1 : 1;
-    return a.start - b.start;
-  });
+  // Tri par date de début (ASC), puis par numéro pour stabilité
+  tasks.sort((a, b) => a.start - b.start || a.number - b.number);
   return tasks;
 }
 
@@ -94,11 +103,11 @@ function computeRange(tasks) {
   return { min, days: daysBetween(min, max) + 1 };
 }
 
-export function createGantt(issues) {
+export function createGantt(issues, schedules = new Map()) {
   const container = document.querySelector(".container");
   if (!container) return;
 
-  const tasks = buildTasks(issues);
+  const tasks = buildTasks(issues, schedules);
   const wrap = document.createElement("div");
   wrap.className = "gantt-wrap";
   wrap.id = "gantt-view";
@@ -180,6 +189,9 @@ export function createGantt(issues) {
       <span class="stat-pill">${tasks.length} issues</span>
       <span class="stat-pill stat-open">● ${tasks.filter((t) => t.state === "open").length} ouvertes</span>
       <span class="stat-pill stat-closed">● ${tasks.filter((t) => t.state === "closed").length} fermées</span>
+      ${tasks.some((t) => t.hasSchedule)
+        ? `<span class="stat-pill" style="color:#0969da;border-color:#0969da;">📅 ${tasks.filter((t) => t.hasSchedule).length} planifiées</span>`
+        : `<span class="stat-pill" style="color:#9a6700;border-color:#9a6700;" title="Ajoute des champs 'Start date' / 'Target date' dans ton GitHub Project pour des barres précises">⚠ aucun planning trouvé</span>`}
     </div>
     <div class="gantt-board" style="--gantt-row-h:${rowH}px;">
       <div class="gantt-left" style="width:${labelW}px;">

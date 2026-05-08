@@ -1,6 +1,6 @@
 // script/export.js
 import { createTableFactice } from "./table.js";
-import { currentIssues } from "./issues-view.js";
+import { currentIssues, currentSchedules } from "./issues-view.js";
 
 function isCardsView() {
   return !!document.querySelector(".issues-cards-wrap");
@@ -131,10 +131,23 @@ export async function exportUserStoriesZip() {
   try {
     const zip = new JSZip();
     const folder = zip.folder("user_stories");
-    const issues = currentIssues.filter((i) => !i.pull_request);
+
+    // Tri chronologique : Start date du projet > created_at, comme dans le script Python.
+    // L'index de sortie reflète l'ordre de planification.
+    const issues = currentIssues
+      .filter((i) => !i.pull_request)
+      .map((i) => {
+        const sched = currentSchedules.get(i.number) || {};
+        const sortKey = sched.start || i.created_at || "";
+        return { issue: i, sortKey, scheduledStart: sched.start || null };
+      })
+      .sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+    const pad = String(issues.length).length; // largeur du numéro (01, 02, ... ou 001, 002, ...)
 
     let i = 0;
-    for (const issue of issues) {
+    for (const entry of issues) {
+      const issue = entry.issue;
       i++;
       if (btn) btn.textContent = `⏳ ${i}/${issues.length}`;
       const node = buildPrintableCard(issue, 900);
@@ -155,7 +168,12 @@ export async function exportUserStoriesZip() {
         .replace(/[^a-z0-9àâäéèêëîïôöùûüç \-_]/gi, "")
         .replace(/\s+/g, "_")
         .slice(0, 60);
-      folder.file(`US_${String(issue.number).padStart(3, "0")}_${safeTitle}.png`, blob);
+      const idx = String(i).padStart(Math.max(pad, 2), "0");
+      const datePart = entry.scheduledStart ? `_${entry.scheduledStart}` : "";
+      folder.file(
+        `${idx}${datePart}_US${String(issue.number).padStart(3, "0")}_${safeTitle}.png`,
+        blob
+      );
     }
 
     const zipBlob = await zip.generateAsync({ type: "blob" });

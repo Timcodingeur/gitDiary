@@ -130,8 +130,14 @@ export function handleClickIssuesCards(repos, token) {
     exportZipBtn.addEventListener("click", exportUserStoriesZip);
     profileContainer.appendChild(exportZipBtn);
 
-    const issues = await fetchIssuesForSelected(repos, token);
-    createIssuesCards(issues);
+    const select = document.querySelector("select");
+    const repo = repos.find((r) => r.name === select.value);
+    const { getIssues, getProjectSchedules } = await import("./github.js");
+    const [issues, schedules] = await Promise.all([
+      getIssues(token, repo.owner.login, repo.name),
+      getProjectSchedules(token, repo.owner.login, repo.name),
+    ]);
+    createIssuesCards(issues, schedules);
   };
 }
 
@@ -166,8 +172,15 @@ export function handleClickGantt(repos, token) {
     exportPng.addEventListener("click", exportGanttPng);
     profileContainer.appendChild(exportPng);
 
-    const issues = await fetchIssuesForSelected(repos, token);
-    createGantt(issues);
+    const select = document.querySelector("select");
+    const repo = repos.find((r) => r.name === select.value);
+    const { getIssues, getProjectSchedules } = await import("./github.js");
+
+    const [issues, schedules] = await Promise.all([
+      getIssues(token, repo.owner.login, repo.name),
+      getProjectSchedules(token, repo.owner.login, repo.name),
+    ]);
+    createGantt(issues, schedules);
   };
 }
 
