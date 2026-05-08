@@ -1,5 +1,9 @@
 // Vues "user stories" (cartes) et Kanban pour les issues GitHub.
 
+// Stocke les issues actuellement affichées (pour les exports).
+export let currentIssues = [];
+export function setCurrentIssues(list) { currentIssues = list || []; }
+
 const STATE_COLUMNS = [
   { key: "open", label: "À faire / Ouvertes", match: (i) => i.state === "open" && !hasLabel(i, ["in progress", "doing", "wip"]) },
   { key: "progress", label: "En cours", match: (i) => i.state === "open" && hasLabel(i, ["in progress", "doing", "wip"]) },
@@ -60,6 +64,7 @@ function fmtDate(iso) {
 export function createIssuesCards(issues) {
   const container = document.querySelector(".container");
   if (!container) return;
+  setCurrentIssues(issues);
 
   const wrap = document.createElement("div");
   wrap.className = "issues-cards-wrap";
@@ -125,6 +130,7 @@ function buildIssueCard(issue) {
 export function createKanban(issues) {
   const container = document.querySelector(".container");
   if (!container) return;
+  setCurrentIssues(issues);
 
   const board = document.createElement("div");
   board.className = "kanban-board";

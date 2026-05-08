@@ -4,6 +4,7 @@ import {
   handleClickIssues,
   handleClickIssuesCards,
   handleClickKanban,
+  handleClickGantt,
   logout,
 } from "./handler.js";
 
@@ -97,6 +98,12 @@ export async function main() {
     buttonKanban.id = "create-kanban";
     buttonKanban.addEventListener("click", handleClickKanban(repos, token));
     buttonContainer.appendChild(buttonKanban);
+
+    const buttonGantt = document.createElement("button");
+    buttonGantt.textContent = "Gantt";
+    buttonGantt.id = "create-gantt";
+    buttonGantt.addEventListener("click", handleClickGantt(repos, token));
+    buttonContainer.appendChild(buttonGantt);
 
     profileContainer.appendChild(buttonContainer);
     container.appendChild(profileContainer);

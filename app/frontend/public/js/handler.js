@@ -4,6 +4,7 @@ import { createIssuesTable, createTable, groupCommitsByDate } from "./table.js";
 import { getSumCommitsTime, handleClickCommit } from "./time.js";  // Fix import path
 import { getCommits } from "./github.js";
 import { createIssuesCards, createKanban, exportKanbanPng } from "./issues-view.js";
+import { createGantt, exportGanttPng } from "./gantt.js";
 
 export function handleClickCommits(repos, token) {
   return async function () {
@@ -62,11 +63,13 @@ function cleanupViews() {
   document.querySelectorAll(".day-commits").forEach((d) => d.remove());
   document.querySelectorAll(".issues-cards-wrap").forEach((d) => d.remove());
   document.querySelectorAll(".kanban-board").forEach((d) => d.remove());
+  document.querySelectorAll(".gantt-wrap").forEach((d) => d.remove());
   const persistent = new Set([
     "Create table commits",
     "Create table issues",
     "User stories",
     "Kanban",
+    "Gantt",
   ]);
   document.querySelectorAll("button").forEach((b) => {
     if (!persistent.has(b.textContent)) b.remove();
@@ -140,6 +143,24 @@ export function handleClickKanban(repos, token) {
 
     const issues = await fetchIssuesForSelected(repos, token);
     createKanban(issues);
+  };
+}
+
+export function handleClickGantt(repos, token) {
+  return async function () {
+    const container = document.querySelector(".container");
+    const profileContainer = document.querySelector(".profile-container");
+    if (!container) return;
+    cleanupViews();
+
+    const exportPng = document.createElement("button");
+    exportPng.textContent = "📥 Export Gantt PNG";
+    exportPng.id = "export-gantt-png";
+    exportPng.addEventListener("click", exportGanttPng);
+    profileContainer.appendChild(exportPng);
+
+    const issues = await fetchIssuesForSelected(repos, token);
+    createGantt(issues);
   };
 }
 

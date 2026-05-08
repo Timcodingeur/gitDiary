@@ -1,14 +1,6 @@
-import dotenv from "dotenv";
-
-dotenv.config();
-
-// Configuration selon l'environnement
+// Détection de l'environnement côté navigateur (pas de process.env / dotenv ici).
 const config = {
   development: {
-    frontendUrl: "http://127.0.0.1:5500/app/frontend/public",
-    apiUrl: "http://localhost:8000",
-  },
-  test: {
     frontendUrl: "http://127.0.0.1:5500/app/frontend/public",
     apiUrl: "http://localhost:8000",
   },
@@ -18,8 +10,9 @@ const config = {
   },
 };
 
-const env = process.env.NODE_ENV || "production";
-const currentConfig = config[env];
+const host = window.location.hostname;
+const isLocal = host === "localhost" || host === "127.0.0.1" || host === "";
+const currentConfig = isLocal ? config.development : config.production;
 
 const API = {
   BASE_URL: "https://api.gitdiary.ch",
