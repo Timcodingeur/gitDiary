@@ -155,71 +155,92 @@ function pickField(fieldValues, names) {
   return null;
 }
 
-export async function getProjectSchedules(token, owner, repo) {
-  const map = new Map(); // issueNumber → { start, end, sprint, estimate, source }
+// Liste les ProjectsV2 d'un owner (organisation ou utilisateur).
+export async function listProjectsForOwner(token, owner) {
+  const projects = [];
   try {
-    // Lister tous les projets de l'owner
     let cursor = null;
-    const projects = [];
     while (true) {
       const data = await gqlRequest(token, PROJECTS_QUERY, { owner, cursor });
-      const owner_ = data.repositoryOwner;
-      if (!owner_ || !owner_.projectsV2) break;
-      projects.push(...owner_.projectsV2.nodes);
-      if (!owner_.projectsV2.pageInfo.hasNextPage) break;
-      cursor = owner_.projectsV2.pageInfo.endCursor;
-    }
-
-    // Pour chaque projet, parcourir les items et conserver ceux du repo
-    for (const proj of projects) {
-      let c = null;
-      while (true) {
-        const data = await gqlRequest(token, PROJECT_ITEMS_QUERY, { projectId: proj.id, cursor: c });
-        const items = data?.node?.items?.nodes || [];
-        for (const item of items) {
-          const issue = item.content;
-          if (!issue || issue.__typename !== "Issue") continue;
-          if (issue.repository?.name !== repo) continue;
-          if ((issue.repository?.owner?.login || "").toLowerCase() !== owner.toLowerCase()) continue;
-
-          const fvs = item.fieldValues?.nodes || [];
-          const startFv = pickField(fvs, ["start date", "start", "début", "date de début", "startdate"]);
-          const endFv = pickField(fvs, ["target date", "end date", "end", "due date", "fin", "date de fin", "deadline", "target", "enddate"]);
-          const iterFv = pickField(fvs, ["sprint", "iteration", "itération"]);
-          const estFv = pickField(fvs, ["estimate", "estimation", "heures", "hours", "story points"]);
-
-          let start = startFv?.date || null;
-          let end = endFv?.date || null;
-
-          // Itération → fournit start + durée
-          if (iterFv?.startDate) {
-            if (!start) start = iterFv.startDate;
-            if (!end) {
-              const sd = new Date(iterFv.startDate);
-              sd.setDate(sd.getDate() + (iterFv.duration || 14));
-              end = sd.toISOString().slice(0, 10);
-            }
-          }
-
-          if (!start && !end) continue;
-
-          map.set(issue.number, {
-            start,
-            end,
-            sprint: iterFv?.title || null,
-            estimate: estFv?.number ?? null,
-            source: `project:${proj.title}`,
-          });
-        }
-        if (!data?.node?.items?.pageInfo?.hasNextPage) break;
-        c = data.node.items.pageInfo.endCursor;
-      }
+      const o = data.repositoryOwner;
+      if (!o || !o.projectsV2) break;
+      projects.push(...o.projectsV2.nodes);
+      if (!o.projectsV2.pageInfo.hasNextPage) break;
+      cursor = o.projectsV2.pageInfo.endCursor;
     }
   } catch (err) {
-    console.warn("[ProjectsV2] récupération impossible :", err.message);
-    // Le scope read:project peut manquer — on continue sans planning custom.
+    console.warn("[ProjectsV2] listProjectsForOwner :", err.message);
+  }
+  return projects;
+}
+
+// Récupère les schedules d'UN projet donné (par id), filtré par repo.
+export async function getSchedulesFromProject(token, projectId, repoFilter = null) {
+  const map = new Map();
+  try {
+    let cursor = null;
+    while (true) {
+      const data = await gqlRequest(token, PROJECT_ITEMS_QUERY, { projectId, cursor });
+      const items = data?.node?.items?.nodes || [];
+      for (const item of items) {
+        const issue = item.content;
+        if (!issue || issue.__typename !== "Issue") continue;
+        if (repoFilter && issue.repository?.name !== repoFilter) continue;
+
+        const fvs = item.fieldValues?.nodes || [];
+        const startFv = pickField(fvs, [
+          "start date", "start", "début", "date de début", "startdate",
+        ]);
+        const endFv = pickField(fvs, [
+          "target date", "end date", "end", "due date", "fin",
+          "date de fin", "deadline", "target", "enddate",
+        ]);
+        const iterFv = pickField(fvs, ["sprint", "iteration", "itération"]);
+        const estFv = pickField(fvs, [
+          "estimate", "estimation", "heures", "hours", "story points",
+        ]);
+
+        let start = startFv?.date || null;
+        let end = endFv?.date || null;
+
+        if (iterFv?.startDate) {
+          if (!start) start = iterFv.startDate;
+          if (!end) {
+            const sd = new Date(iterFv.startDate);
+            sd.setDate(sd.getDate() + (iterFv.duration || 14));
+            end = sd.toISOString().slice(0, 10);
+          }
+        }
+
+        if (!start && !end) continue;
+
+        map.set(issue.number, {
+          start,
+          end,
+          sprint: iterFv?.title || null,
+          estimate: estFv?.number ?? null,
+        });
+      }
+      if (!data?.node?.items?.pageInfo?.hasNextPage) break;
+      cursor = data.node.items.pageInfo.endCursor;
+    }
+  } catch (err) {
+    console.warn("[ProjectsV2] getSchedulesFromProject :", err.message);
   }
   return map;
+}
+
+// Auto : essaie tous les projets de l'owner et fusionne ceux qui matchent le repo.
+export async function getProjectSchedules(token, owner, repo) {
+  const merged = new Map();
+  const projects = await listProjectsForOwner(token, owner);
+  for (const p of projects) {
+    const m = await getSchedulesFromProject(token, p.id, repo);
+    for (const [k, v] of m) {
+      if (!merged.has(k)) merged.set(k, { ...v, source: `project:${p.title}` });
+    }
+  }
+  return merged;
 }
 
 export async function getUserInfo(token) {

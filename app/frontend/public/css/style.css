@@ -93,6 +93,10 @@
       .profile-container select {
         margin-right: 10px;
       }
+      #project-select {
+        background: #fff;
+        max-width: 280px;
+      }
       .profile-container img {
         margin-left: 20px;
         order: 1;

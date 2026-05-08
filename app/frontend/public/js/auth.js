@@ -63,8 +63,11 @@ const API = {
 export async function startOAuth() {
   const clientId = "Ov23li1L2rvL4GwFN9tQ";
   const redirectUri = `${currentConfig.apiUrl}/callback`;
-  const scope = "repo";
-  const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
+  // "repo" pour les issues/commits, "read:project" pour lire les ProjectsV2 (Start/Target dates).
+  const scope = "repo read:project";
+  const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
+  console.log("[OAuth] scope demandé:", scope);
+  console.log("[OAuth] URL:", authUrl);
   window.location.href = authUrl;
 }
 

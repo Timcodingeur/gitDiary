@@ -77,11 +77,25 @@ function cleanupViews() {
 }
 
 async function fetchIssuesForSelected(repos, token) {
-  const select = document.querySelector("select");
+  const select = document.querySelector("#repo-select") || document.querySelector("select");
   const repoName = select.value;
   const repo = repos.find((r) => r.name === repoName);
   const { getIssues } = await import("./github.js");
   return await getIssues(token, repo.owner.login, repo.name);
+}
+
+// Récupère les schedules selon la sélection du dropdown projet (auto = tous les projets de l'owner).
+async function fetchSchedulesForSelected(repos, token) {
+  const repoSelect = document.querySelector("#repo-select") || document.querySelector("select");
+  const projectSelect = document.querySelector("#project-select");
+  const repo = repos.find((r) => r.name === repoSelect.value);
+  if (!repo) return new Map();
+  const { getProjectSchedules, getSchedulesFromProject } = await import("./github.js");
+  const projectVal = projectSelect?.value || "auto";
+  if (projectVal === "auto") {
+    return await getProjectSchedules(token, repo.owner.login, repo.name);
+  }
+  return await getSchedulesFromProject(token, projectVal, repo.name);
 }
 
 function addStandardExportButtons(profileContainer) {
@@ -130,12 +144,9 @@ export function handleClickIssuesCards(repos, token) {
     exportZipBtn.addEventListener("click", exportUserStoriesZip);
     profileContainer.appendChild(exportZipBtn);
 
-    const select = document.querySelector("select");
-    const repo = repos.find((r) => r.name === select.value);
-    const { getIssues, getProjectSchedules } = await import("./github.js");
     const [issues, schedules] = await Promise.all([
-      getIssues(token, repo.owner.login, repo.name),
-      getProjectSchedules(token, repo.owner.login, repo.name),
+      fetchIssuesForSelected(repos, token),
+      fetchSchedulesForSelected(repos, token),
     ]);
     createIssuesCards(issues, schedules);
   };
@@ -172,19 +183,18 @@ export function handleClickGantt(repos, token) {
     exportPng.addEventListener("click", exportGanttPng);
     profileContainer.appendChild(exportPng);
 
-    const select = document.querySelector("select");
-    const repo = repos.find((r) => r.name === select.value);
-    const { getIssues, getProjectSchedules } = await import("./github.js");
-
     const [issues, schedules] = await Promise.all([
-      getIssues(token, repo.owner.login, repo.name),
-      getProjectSchedules(token, repo.owner.login, repo.name),
+      fetchIssuesForSelected(repos, token),
+      fetchSchedulesForSelected(repos, token),
     ]);
     createGantt(issues, schedules);
   };
 }
 
 export function logout() {
+  // Le token est stocké dans localStorage.github_token (cf. auth.js login())
+  localStorage.removeItem("github_token");
   sessionStorage.removeItem("token");
-  window.location.reload();
+  // On nettoie aussi un éventuel ?code=... dans l'URL pour ne pas relancer l'OAuth en boucle
+  window.location.href = window.location.pathname;
 }

@@ -64,6 +64,7 @@ export async function main() {
     }
 
     const select = document.createElement("select");
+    select.id = "repo-select";
     repos.forEach((repo) => {
       const option = document.createElement("option");
       option.value = repo.name;
@@ -71,6 +72,36 @@ export async function main() {
       select.appendChild(option);
     });
     profileContainer.appendChild(select);
+
+    // Sélecteur de Project v2 (Auto = parcourt tous les projets de l'owner)
+    const projectSelect = document.createElement("select");
+    projectSelect.id = "project-select";
+    projectSelect.title = "GitHub Project pour les dates planifiées";
+    projectSelect.innerHTML = `<option value="auto">📋 Project : auto</option>`;
+    profileContainer.appendChild(projectSelect);
+
+    async function refreshProjects() {
+      const repo = repos.find((r) => r.name === select.value);
+      if (!repo) return;
+      projectSelect.innerHTML = `<option value="auto">⏳ chargement…</option>`;
+      const { listProjectsForOwner } = await import("./github.js");
+      const projects = await listProjectsForOwner(token, repo.owner.login);
+      projectSelect.innerHTML = `<option value="auto">📋 Auto (tous les projets)</option>`;
+      if (!projects.length) {
+        const opt = document.createElement("option");
+        opt.disabled = true;
+        opt.textContent = "Aucun projet trouvé (scope read:project ?)";
+        projectSelect.appendChild(opt);
+      }
+      projects.forEach((p) => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = `#${p.number} — ${p.title}`;
+        projectSelect.appendChild(opt);
+      });
+    }
+    select.addEventListener("change", refreshProjects);
+    refreshProjects();
 
     const buttonContainer = document.createElement("div");
     buttonContainer.className = "button-container";
