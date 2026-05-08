@@ -27,7 +27,7 @@ export async function exportToPdf() {
     }
 
     if (isCardsView() && currentIssues.length) {
-      return exportCardsToPdf(jsPDF);
+      return await exportCardsToPdf(jsPDF);
     }
 
     const pdf = new jsPDF();
@@ -46,87 +46,239 @@ export async function exportToPdf() {
   }
 }
 
-function exportCardsToPdf(jsPDF) {
+async function exportCardsToPdf(jsPDF) {
+  const issues = currentIssues.filter((i) => !i.pull_request);
+  if (!issues.length) return;
+  if (typeof html2canvas !== "function") {
+    alert("html2canvas non chargé.");
+    return;
+  }
+
   const pdf = new jsPDF({ unit: "pt", format: "a4" });
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
-  const margin = 40;
+  const margin = 36;
   const maxW = pageW - margin * 2;
-  let y = margin;
 
+  // Page de garde
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(20);
-  pdf.text("User stories", margin, y);
-  y += 24;
-  pdf.setFontSize(10);
+  pdf.setFontSize(24);
+  pdf.text("User stories", margin, margin + 20);
+  pdf.setFontSize(11);
   pdf.setFont("helvetica", "normal");
   pdf.setTextColor(110);
-  pdf.text(`Exporté le ${new Date().toLocaleString("fr-FR")} — ${currentIssues.filter(i => !i.pull_request).length} issues`, margin, y);
+  pdf.text(
+    `Exporté le ${new Date().toLocaleString("fr-FR")} — ${issues.length} issues`,
+    margin,
+    margin + 42
+  );
   pdf.setTextColor(0);
-  y += 24;
 
-  const issues = currentIssues.filter((i) => !i.pull_request);
+  let y = margin + 70;
 
   for (const issue of issues) {
-    const titleLines = pdf.splitTextToSize(`#${issue.number} — ${issue.title}`, maxW);
-    const meta = [
-      issue.user?.login ? `Auteur : ${issue.user.login}` : null,
-      `État : ${issue.state === "open" ? "Ouverte" : "Fermée"}`,
-      `Créée : ${new Date(issue.created_at).toLocaleDateString("fr-FR")}`,
-      issue.closed_at ? `Fermée : ${new Date(issue.closed_at).toLocaleDateString("fr-FR")}` : null,
-      (issue.assignees || []).length ? `Assigné : ${issue.assignees.map((a) => a.login).join(", ")}` : null,
-    ].filter(Boolean).join("  ·  ");
-    const labels = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name)).join(", ");
-    const body = stripMd(issue.body || "Pas de description.");
-    const bodyLines = pdf.splitTextToSize(body, maxW);
+    const node = buildPrintableCard(issue, 720);
+    document.body.appendChild(node);
+    let canvas;
+    try {
+      canvas = await html2canvas(node, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+    } finally {
+      document.body.removeChild(node);
+    }
 
-    const blockH =
-      titleLines.length * 18 +
-      14 +
-      (labels ? 14 : 0) +
-      bodyLines.length * 13 +
-      24;
+    const imgW = maxW;
+    const imgH = (canvas.height * imgW) / canvas.width;
 
-    if (y + blockH > pageH - margin) {
+    if (y + imgH > pageH - margin) {
       pdf.addPage();
       y = margin;
     }
 
-    // Title
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(13);
-    pdf.setTextColor(issue.state === "closed" ? 130 : 26, issue.state === "closed" ? 80 : 127, issue.state === "closed" ? 223 : 55);
-    pdf.text(titleLines, margin, y);
-    y += titleLines.length * 16;
-
-    // Meta
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(9);
-    pdf.setTextColor(110);
-    pdf.text(meta, margin, y);
-    y += 12;
-
-    if (labels) {
-      pdf.setTextColor(80);
-      pdf.text(`Labels : ${labels}`, margin, y);
-      y += 12;
-    }
-
-    // Body
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(10);
-    pdf.setTextColor(30);
-    pdf.text(bodyLines, margin, y);
-    y += bodyLines.length * 12;
-
-    // Separator
-    y += 10;
-    pdf.setDrawColor(220);
-    pdf.line(margin, y, pageW - margin, y);
-    y += 14;
+    pdf.addImage(canvas.toDataURL("image/png"), "PNG", margin, y, imgW, imgH);
+    y += imgH + 18;
   }
 
   saveBlob(pdf.output("blob"), "user_stories.pdf");
+}
+
+// ─── Export ZIP de PNG par user story ─────────────
+export async function exportUserStoriesZip() {
+  if (!isCardsView() || !currentIssues.length) {
+    alert("Affiche la vue 'User stories' avant d'exporter.");
+    return;
+  }
+  if (typeof JSZip !== "function") {
+    alert("JSZip non chargé.");
+    return;
+  }
+  if (typeof html2canvas !== "function") {
+    alert("html2canvas non chargé.");
+    return;
+  }
+
+  const btn = document.getElementById("export-us-zip");
+  const original = btn?.textContent;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "⏳ Génération...";
+  }
+
+  try {
+    const zip = new JSZip();
+    const folder = zip.folder("user_stories");
+    const issues = currentIssues.filter((i) => !i.pull_request);
+
+    let i = 0;
+    for (const issue of issues) {
+      i++;
+      if (btn) btn.textContent = `⏳ ${i}/${issues.length}`;
+      const node = buildPrintableCard(issue, 900);
+      document.body.appendChild(node);
+      let blob;
+      try {
+        const canvas = await html2canvas(node, {
+          backgroundColor: "#ffffff",
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        });
+        blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
+      } finally {
+        document.body.removeChild(node);
+      }
+      const safeTitle = (issue.title || "untitled")
+        .replace(/[^a-z0-9àâäéèêëîïôöùûüç \-_]/gi, "")
+        .replace(/\s+/g, "_")
+        .slice(0, 60);
+      folder.file(`US_${String(issue.number).padStart(3, "0")}_${safeTitle}.png`, blob);
+    }
+
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    saveBlob(zipBlob, `user_stories_${new Date().toISOString().slice(0, 10)}.zip`);
+  } catch (err) {
+    console.error(err);
+    alert("Erreur export ZIP : " + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
+}
+
+// ─── Construit une "carte imprimable" hors-écran ───
+function buildPrintableCard(issue, width = 800) {
+  const wrap = document.createElement("div");
+  wrap.style.cssText = `
+    position: absolute;
+    left: -99999px;
+    top: 0;
+    width: ${width}px;
+    background: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #24292e;
+    padding: 24px 28px;
+    border-radius: 12px;
+    border: 1px solid #e1e4e8;
+    border-left: 5px solid ${issue.state === "open" ? "#1a7f37" : "#8250df"};
+    box-sizing: border-box;
+  `;
+
+  const stateBadge = issue.state === "open"
+    ? `<span style="background:#dafbe1;color:#1a7f37;font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:.4px;">○ Ouverte</span>`
+    : `<span style="background:#fbefff;color:#8250df;font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:.4px;">✓ Fermée</span>`;
+
+  const labels = (issue.labels || []).map((l) => {
+    const name = typeof l === "string" ? l : l.name;
+    const color = typeof l === "string" ? "8b949e" : (l.color || "8b949e");
+    return `<span style="display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;background:#${color}22;color:#${color === "ffffff" ? "555" : color};border:1px solid #${color}66;margin:0 4px 4px 0;">${escHtml(name)}</span>`;
+  }).join("");
+
+  const created = new Date(issue.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+  const closed = issue.closed_at
+    ? new Date(issue.closed_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })
+    : null;
+  const assignees = (issue.assignees || []).map((a) => a.login).join(", ");
+
+  const bodyHtml = renderMarkdownForPrint(issue.body || "");
+
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+      ${stateBadge}
+      <span style="font-family:'SF Mono',Menlo,monospace;font-size:13px;color:#586069;">#${issue.number}</span>
+      <h2 style="margin:0;font-size:20px;font-weight:700;color:#24292e;flex:1;line-height:1.3;">${escHtml(issue.title)}</h2>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:#586069;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eaecef;">
+      ${issue.user?.login ? `<span><strong style="color:#24292e;">Auteur :</strong> ${escHtml(issue.user.login)}</span>` : ""}
+      <span><strong style="color:#24292e;">Créée :</strong> ${created}</span>
+      ${closed ? `<span><strong style="color:#24292e;">Fermée :</strong> ${closed}</span>` : ""}
+      ${assignees ? `<span><strong style="color:#24292e;">Assigné :</strong> ${escHtml(assignees)}</span>` : ""}
+      ${issue.milestone ? `<span><strong style="color:#24292e;">Milestone :</strong> ${escHtml(issue.milestone.title)}</span>` : ""}
+    </div>
+    ${labels ? `<div style="margin-bottom:12px;">${labels}</div>` : ""}
+    <div style="font-size:14px;line-height:1.6;color:#24292e;">${bodyHtml}</div>
+  `;
+  return wrap;
+}
+
+function renderMarkdownForPrint(md) {
+  if (!md.trim()) return `<em style="color:#959da5;">Pas de description.</em>`;
+  let html;
+  if (window.marked) {
+    try {
+      html = window.marked.parse(md, { breaks: true, gfm: true });
+    } catch (_) {
+      html = escHtml(md).replace(/\n/g, "<br>");
+    }
+  } else {
+    html = escHtml(md).replace(/\n/g, "<br>");
+  }
+  // Style inline pour html2canvas (pas d'accès aux .markdown-body classes)
+  const wrap = document.createElement("div");
+  wrap.innerHTML = html;
+  wrap.querySelectorAll("h1,h2,h3,h4").forEach((h) => {
+    h.style.cssText = "margin:14px 0 6px;font-size:16px;font-weight:700;color:#24292e;";
+  });
+  wrap.querySelectorAll("p").forEach((p) => {
+    p.style.cssText = "margin:0 0 10px;";
+  });
+  wrap.querySelectorAll("ul,ol").forEach((l) => {
+    l.style.cssText = "margin:6px 0 10px;padding-left:24px;";
+  });
+  wrap.querySelectorAll("li").forEach((li) => {
+    li.style.cssText = "margin:3px 0;";
+  });
+  wrap.querySelectorAll("input[type=checkbox]").forEach((cb) => {
+    const span = document.createElement("span");
+    span.textContent = cb.checked ? "☑ " : "☐ ";
+    span.style.cssText = "color:#0969da;font-weight:700;";
+    cb.replaceWith(span);
+  });
+  wrap.querySelectorAll("code").forEach((c) => {
+    if (c.parentElement.tagName !== "PRE") {
+      c.style.cssText = "background:#f6f8fa;padding:2px 6px;border-radius:4px;font-family:'SF Mono',Menlo,monospace;font-size:12px;";
+    }
+  });
+  wrap.querySelectorAll("pre").forEach((p) => {
+    p.style.cssText = "background:#0d1117;color:#e6edf3;padding:12px;border-radius:6px;overflow-x:auto;font-family:'SF Mono',Menlo,monospace;font-size:12px;margin:8px 0;";
+  });
+  wrap.querySelectorAll("blockquote").forEach((b) => {
+    b.style.cssText = "border-left:3px solid #d0d7de;padding-left:12px;color:#586069;margin:8px 0;";
+  });
+  return wrap.innerHTML;
+}
+
+function escHtml(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 // ─── Markdown ───────────────────────────────────────

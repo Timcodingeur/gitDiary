@@ -39,27 +39,42 @@ function escHtml(s) {
 
 function buildTasks(issues) {
   const tasks = [];
+  const today = startOfDay(new Date());
   for (const issue of issues) {
     if (issue.pull_request) continue;
     const start = parseISO(issue.created_at);
     if (!start) continue;
-    let end = parseISO(issue.closed_at) || parseISO(issue.updated_at) || new Date();
+    // Pour une issue ouverte → barre jusqu'à aujourd'hui (pour bien voir la durée).
+    // Pour une issue fermée → start → closed_at, mais minimum 2 jours visibles.
+    let end;
+    if (issue.state === "open") {
+      end = today;
+    } else {
+      end = parseISO(issue.closed_at) || parseISO(issue.updated_at) || today;
+    }
     if (end < start) end = start;
-    const minEnd = addDays(start, 0);
-    if (daysBetween(start, end) < 1) end = addDays(start, 1);
+    let s = startOfDay(start);
+    let e = startOfDay(end);
+    // Durée minimale de 2 jours pour rester visible quand tout se passe le même jour.
+    if (daysBetween(s, e) < 2) e = addDays(s, 2);
     tasks.push({
       number: issue.number,
       title: issue.title,
       url: issue.html_url,
       state: issue.state,
-      start: startOfDay(start),
-      end: startOfDay(end),
+      start: s,
+      end: e,
+      sameDay: !issue.closed_at || daysBetween(startOfDay(start), startOfDay(end)) < 1,
       author: issue.user?.login || "",
       assignees: (issue.assignees || []).map((a) => a.login),
       labels: (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name)),
     });
   }
-  tasks.sort((a, b) => a.start - b.start);
+  // Tri : par état (ouvertes d'abord), puis par date de création (asc)
+  tasks.sort((a, b) => {
+    if (a.state !== b.state) return a.state === "open" ? -1 : 1;
+    return a.start - b.start;
+  });
   return tasks;
 }
 

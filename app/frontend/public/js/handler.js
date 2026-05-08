@@ -1,5 +1,5 @@
 // script/handlers.js
-import { exportToPdf, exportToMarkdown, exportToCsv } from "./export.js";
+import { exportToPdf, exportToMarkdown, exportToCsv, exportUserStoriesZip } from "./export.js";
 import { createIssuesTable, createTable, groupCommitsByDate } from "./table.js";  // Fix import path
 import { getSumCommitsTime, handleClickCommit } from "./time.js";  // Fix import path
 import { getCommits } from "./github.js";
@@ -123,6 +123,13 @@ export function handleClickIssuesCards(repos, token) {
     if (!container) return;
     cleanupViews();
     addStandardExportButtons(profileContainer);
+
+    const exportZipBtn = document.createElement("button");
+    exportZipBtn.textContent = "📦 Export ZIP (PNG)";
+    exportZipBtn.id = "export-us-zip";
+    exportZipBtn.addEventListener("click", exportUserStoriesZip);
+    profileContainer.appendChild(exportZipBtn);
+
     const issues = await fetchIssuesForSelected(repos, token);
     createIssuesCards(issues);
   };
