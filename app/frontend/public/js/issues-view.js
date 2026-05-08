@@ -39,10 +39,29 @@ function renderMarkdown(md) {
   return escHtml(md).replace(/\n/g, "<br>");
 }
 
+function hexToRgb(hex) {
+  const h = (hex || "8b949e").replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return { r, g, b };
+}
+
 function labelChip(label) {
   const name = typeof label === "string" ? label : label.name;
-  const color = typeof label === "string" ? "8b949e" : (label.color || "8b949e");
-  return `<span class="issue-chip" style="--chip:#${color}">${escHtml(name)}</span>`;
+  const hex = typeof label === "string" ? "8b949e" : (label.color || "8b949e");
+  const { r, g, b } = hexToRgb(hex);
+  // Fond clair, bordure mi-opacité, texte foncé — tous en rgba (compatible html2canvas).
+  const bg = `rgba(${r},${g},${b},0.15)`;
+  const bd = `rgba(${r},${g},${b},0.45)`;
+  // Assombrir le texte si la couleur originale est trop claire
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  const txtR = Math.round(r * (lum > 0.6 ? 0.55 : 0.85));
+  const txtG = Math.round(g * (lum > 0.6 ? 0.55 : 0.85));
+  const txtB = Math.round(b * (lum > 0.6 ? 0.55 : 0.85));
+  const tx = `rgb(${txtR},${txtG},${txtB})`;
+  return `<span class="issue-chip" style="background:${bg};border:1px solid ${bd};color:${tx};">${escHtml(name)}</span>`;
 }
 
 function avatar(user, size = 24) {

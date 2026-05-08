@@ -222,6 +222,16 @@ function buildPrintableCard(issue, width = 800) {
     b.style.overflow = "visible";
   });
 
+  // Sanitize : supprime les valeurs CSS modernes que html2canvas v1 ne sait pas parser
+  // (color-mix, oklch, color(), lab(), lch(), etc.)
+  const offending = /(color-mix|oklch|oklab|color\(|lab\(|lch\()/i;
+  card.querySelectorAll("*").forEach((el) => {
+    const inline = el.getAttribute("style");
+    if (inline && offending.test(inline)) {
+      el.setAttribute("style", inline.replace(/[a-z-]+\s*:\s*[^;]*?(color-mix|oklch|oklab|color\(|lab\(|lch\()[^;]*;?/gi, ""));
+    }
+  });
+
   // Petit footer discret avec date d'export
   const footer = document.createElement("div");
   footer.style.cssText = `

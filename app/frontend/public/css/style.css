@@ -237,9 +237,7 @@
         font-weight: 600;
         padding: 2px 9px;
         border-radius: 12px;
-        background: color-mix(in srgb, var(--chip) 18%, white);
-        color: color-mix(in srgb, var(--chip) 80%, black);
-        border: 1px solid color-mix(in srgb, var(--chip) 40%, transparent);
+        /* couleurs (background/border/color) injectées en rgba via le JS */
       }
       .issue-body {
         font-size: 13px;
