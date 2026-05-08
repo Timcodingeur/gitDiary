@@ -138,6 +138,252 @@
       .dropdown:hover .dropdown-content {
         box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
       }
+      /* ─── Vue cartes (user stories) ─── */
+      .issues-stats {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 16px 0 8px;
+      }
+      .stat-pill {
+        padding: 4px 12px;
+        border-radius: 16px;
+        background: #fff;
+        border: 1px solid var(--color-border);
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+      }
+      .stat-pill.stat-open { color: #1a7f37; border-color: #1a7f37; }
+      .stat-pill.stat-closed { color: #8250df; border-color: #8250df; }
+      .stat-pill.stat-pr { color: #0969da; border-color: #0969da; }
+      .issues-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .issue-card {
+        background: #fff;
+        border: 1px solid var(--color-border);
+        border-radius: 10px;
+        padding: 16px 18px;
+        box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        transition: box-shadow .15s, transform .15s;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        border-left: 4px solid #d0d7de;
+      }
+      .issue-card:hover {
+        box-shadow: 0 6px 18px rgba(0,0,0,.08);
+        transform: translateY(-1px);
+      }
+      .issue-card-open { border-left-color: #1a7f37; }
+      .issue-card-closed { border-left-color: #8250df; opacity: .92; }
+      .issue-card-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .issue-state-badge {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 12px;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+      }
+      .issue-state-open { background: #dafbe1; color: #1a7f37; }
+      .issue-state-closed { background: #fbefff; color: #8250df; }
+      .issue-num {
+        font-family: 'SF Mono', Menlo, monospace;
+        font-size: 12px;
+        color: var(--color-text-secondary);
+      }
+      .issue-title-link {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--color-text);
+        text-decoration: none;
+        flex: 1;
+        min-width: 0;
+      }
+      .issue-title-link:hover { color: #0969da; text-decoration: underline; }
+      .issue-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        font-size: 12px;
+        color: var(--color-text-secondary);
+      }
+      .issue-avatar { border-radius: 50%; vertical-align: middle; }
+      .issue-author { font-weight: 600; color: var(--color-text); }
+      .issue-dot { color: #d0d7de; }
+      .issue-assignees {
+        display: inline-flex;
+        gap: 2px;
+        margin-left: auto;
+      }
+      .issue-labels {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .issue-chip {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 9px;
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--chip) 18%, white);
+        color: color-mix(in srgb, var(--chip) 80%, black);
+        border: 1px solid color-mix(in srgb, var(--chip) 40%, transparent);
+      }
+      .issue-body {
+        font-size: 13px;
+        line-height: 1.55;
+        color: var(--color-text);
+        background: #f6f8fa;
+        border-radius: 8px;
+        padding: 12px 14px;
+        border: 1px solid var(--color-border);
+        max-height: 280px;
+        overflow-y: auto;
+      }
+      .issue-body p { margin: 0 0 8px; }
+      .issue-body p:last-child { margin-bottom: 0; }
+      .issue-body code {
+        background: #eaeef2;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      .issue-body pre {
+        background: #0d1117;
+        color: #e6edf3;
+        padding: 10px;
+        border-radius: 6px;
+        overflow-x: auto;
+        font-size: 12px;
+      }
+      .issue-body ul, .issue-body ol { margin: 6px 0 8px; padding-left: 22px; }
+      .issue-body h1, .issue-body h2, .issue-body h3 { margin: 8px 0 4px; }
+      .empty-desc { color: #959da5; font-size: 12px; }
+      .issue-milestone {
+        font-size: 12px;
+        color: var(--color-text-secondary);
+        font-weight: 600;
+      }
+
+      /* ─── Vue Kanban ─── */
+      .kanban-board {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(280px, 1fr));
+        gap: 14px;
+        margin-top: 20px;
+        align-items: start;
+      }
+      .kanban-col {
+        background: #f6f8fa;
+        border-radius: 10px;
+        padding: 12px;
+        border: 1px solid var(--color-border);
+        min-height: 200px;
+      }
+      .kanban-col-open { border-top: 3px solid #1a7f37; }
+      .kanban-col-progress { border-top: 3px solid #d4a72c; }
+      .kanban-col-closed { border-top: 3px solid #8250df; }
+      .kanban-col-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding: 0 4px;
+      }
+      .kanban-col-title {
+        font-weight: 700;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--color-text);
+      }
+      .kanban-col-count {
+        background: #fff;
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        padding: 2px 9px;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--color-text-secondary);
+      }
+      .kanban-col-body {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .kanban-card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 12px;
+        box-shadow: 0 1px 2px rgba(0,0,0,.06);
+        border: 1px solid var(--color-border);
+        transition: box-shadow .15s, transform .15s;
+      }
+      .kanban-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,.1);
+        transform: translateY(-1px);
+      }
+      .kanban-card-head {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .kanban-num {
+        font-family: 'SF Mono', Menlo, monospace;
+        font-size: 11px;
+        color: var(--color-text-secondary);
+      }
+      .kanban-title {
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--color-text);
+        text-decoration: none;
+        line-height: 1.35;
+      }
+      .kanban-title:hover { color: #0969da; }
+      .kanban-excerpt {
+        font-size: 12px;
+        color: var(--color-text-secondary);
+        margin: 6px 0 8px;
+        line-height: 1.4;
+      }
+      .kanban-labels {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 8px;
+      }
+      .kanban-card-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 11px;
+        color: var(--color-text-secondary);
+        border-top: 1px solid var(--color-border);
+        padding-top: 6px;
+      }
+      .kanban-assignees { display: inline-flex; gap: 2px; }
+      .kanban-empty {
+        text-align: center;
+        color: #959da5;
+        font-size: 12px;
+        padding: 20px 0;
+        font-style: italic;
+      }
+
       @keyframes dropdownFadeIn {
         0% {
           opacity: 0;

@@ -1,5 +1,11 @@
 import { getUserInfo, getRepos } from "./github.js";
-import { handleClickCommits, handleClickIssues, logout } from "./handler.js";
+import {
+  handleClickCommits,
+  handleClickIssues,
+  handleClickIssuesCards,
+  handleClickKanban,
+  logout,
+} from "./handler.js";
 
 export async function main() {
   const token = localStorage.getItem("github_token");
@@ -79,6 +85,18 @@ export async function main() {
     buttonIssues.id = "create-table-issue";
     buttonIssues.addEventListener("click", handleClickIssues(repos, token));
     buttonContainer.appendChild(buttonIssues);
+
+    const buttonStories = document.createElement("button");
+    buttonStories.textContent = "User stories";
+    buttonStories.id = "create-issues-cards";
+    buttonStories.addEventListener("click", handleClickIssuesCards(repos, token));
+    buttonContainer.appendChild(buttonStories);
+
+    const buttonKanban = document.createElement("button");
+    buttonKanban.textContent = "Kanban";
+    buttonKanban.id = "create-kanban";
+    buttonKanban.addEventListener("click", handleClickKanban(repos, token));
+    buttonContainer.appendChild(buttonKanban);
 
     profileContainer.appendChild(buttonContainer);
     container.appendChild(profileContainer);
