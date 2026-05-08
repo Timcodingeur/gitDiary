@@ -206,23 +206,23 @@ function buildPrintableCard(issue, width = 800) {
     card.textContent = issue.title || "(sans titre)";
   }
 
-  // Remplace les <input type=checkbox> par de vraies cases visuelles dessinées en CSS.
+  // Remplace les <input type=checkbox> par des cases au style GitHub (bleu #0969da quand cochées).
   card.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
     const checked = cb.checked;
     const box = document.createElement("span");
     box.style.cssText = `
       display: inline-block;
-      width: 14px;
-      height: 14px;
-      border: 2px solid ${checked ? "#1a7f37" : "#8c959f"};
+      width: 13px;
+      height: 13px;
+      border: 1px solid ${checked ? "#0969da" : "#d0d7de"};
       border-radius: 3px;
-      background: ${checked ? "#1a7f37" : "#ffffff"};
-      vertical-align: -3px;
-      margin-right: 8px;
+      background: ${checked ? "#0969da" : "#ffffff"};
+      vertical-align: -2px;
+      margin-right: 6px;
       box-sizing: border-box;
       text-align: center;
-      line-height: 10px;
-      font-size: 11px;
+      line-height: 11px;
+      font-size: 10px;
       font-weight: 900;
       color: #ffffff;
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
