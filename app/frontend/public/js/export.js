@@ -172,6 +172,7 @@ export async function exportUserStoriesZip() {
 }
 
 // ─── Construit une "carte imprimable" hors-écran ───
+// Clone la vraie .issue-card du DOM (style identique) et l'embellit pour l'export.
 function buildPrintableCard(issue, width = 800) {
   const wrap = document.createElement("div");
   wrap.style.cssText = `
@@ -179,98 +180,62 @@ function buildPrintableCard(issue, width = 800) {
     left: -99999px;
     top: 0;
     width: ${width}px;
+    padding: 16px;
     background: #ffffff;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    color: #24292e;
-    padding: 24px 28px;
-    border-radius: 12px;
-    border: 1px solid #e1e4e8;
-    border-left: 5px solid ${issue.state === "open" ? "#1a7f37" : "#8250df"};
     box-sizing: border-box;
   `;
 
-  const stateBadge = issue.state === "open"
-    ? `<span style="background:#dafbe1;color:#1a7f37;font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:.4px;">○ Ouverte</span>`
-    : `<span style="background:#fbefff;color:#8250df;font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:.4px;">✓ Fermée</span>`;
-
-  const labels = (issue.labels || []).map((l) => {
-    const name = typeof l === "string" ? l : l.name;
-    const color = typeof l === "string" ? "8b949e" : (l.color || "8b949e");
-    return `<span style="display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;background:#${color}22;color:#${color === "ffffff" ? "555" : color};border:1px solid #${color}66;margin:0 4px 4px 0;">${escHtml(name)}</span>`;
-  }).join("");
-
-  const created = new Date(issue.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
-  const closed = issue.closed_at
-    ? new Date(issue.closed_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })
-    : null;
-  const assignees = (issue.assignees || []).map((a) => a.login).join(", ");
-
-  const bodyHtml = renderMarkdownForPrint(issue.body || "");
-
-  wrap.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
-      ${stateBadge}
-      <span style="font-family:'SF Mono',Menlo,monospace;font-size:13px;color:#586069;">#${issue.number}</span>
-      <h2 style="margin:0;font-size:20px;font-weight:700;color:#24292e;flex:1;line-height:1.3;">${escHtml(issue.title)}</h2>
-    </div>
-    <div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:#586069;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #eaecef;">
-      ${issue.user?.login ? `<span><strong style="color:#24292e;">Auteur :</strong> ${escHtml(issue.user.login)}</span>` : ""}
-      <span><strong style="color:#24292e;">Créée :</strong> ${created}</span>
-      ${closed ? `<span><strong style="color:#24292e;">Fermée :</strong> ${closed}</span>` : ""}
-      ${assignees ? `<span><strong style="color:#24292e;">Assigné :</strong> ${escHtml(assignees)}</span>` : ""}
-      ${issue.milestone ? `<span><strong style="color:#24292e;">Milestone :</strong> ${escHtml(issue.milestone.title)}</span>` : ""}
-    </div>
-    ${labels ? `<div style="margin-bottom:12px;">${labels}</div>` : ""}
-    <div style="font-size:14px;line-height:1.6;color:#24292e;">${bodyHtml}</div>
-  `;
-  return wrap;
-}
-
-function renderMarkdownForPrint(md) {
-  if (!md.trim()) return `<em style="color:#959da5;">Pas de description.</em>`;
-  let html;
-  if (window.marked) {
-    try {
-      html = window.marked.parse(md, { breaks: true, gfm: true });
-    } catch (_) {
-      html = escHtml(md).replace(/\n/g, "<br>");
-    }
+  // Trouver la carte affichée et la cloner (les CSS de style.css s'appliquent au clone)
+  const original = document.querySelector(
+    `.issue-card[data-issue-number="${issue.number}"]`
+  );
+  let card;
+  if (original) {
+    card = original.cloneNode(true);
+    card.style.width = `${width - 32}px`;
+    card.style.maxWidth = "none";
   } else {
-    html = escHtml(md).replace(/\n/g, "<br>");
+    card = document.createElement("div");
+    card.className = `issue-card issue-card-${issue.state}`;
+    card.textContent = issue.title || "(sans titre)";
   }
-  // Style inline pour html2canvas (pas d'accès aux .markdown-body classes)
-  const wrap = document.createElement("div");
-  wrap.innerHTML = html;
-  wrap.querySelectorAll("h1,h2,h3,h4").forEach((h) => {
-    h.style.cssText = "margin:14px 0 6px;font-size:16px;font-weight:700;color:#24292e;";
-  });
-  wrap.querySelectorAll("p").forEach((p) => {
-    p.style.cssText = "margin:0 0 10px;";
-  });
-  wrap.querySelectorAll("ul,ol").forEach((l) => {
-    l.style.cssText = "margin:6px 0 10px;padding-left:24px;";
-  });
-  wrap.querySelectorAll("li").forEach((li) => {
-    li.style.cssText = "margin:3px 0;";
-  });
-  wrap.querySelectorAll("input[type=checkbox]").forEach((cb) => {
+
+  // Remplace les <input type=checkbox> (mal rendus par html2canvas) par des box Unicode propres
+  card.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
     const span = document.createElement("span");
-    span.textContent = cb.checked ? "☑ " : "☐ ";
-    span.style.cssText = "color:#0969da;font-weight:700;";
+    const checked = cb.checked;
+    span.textContent = checked ? "☑" : "☐";
+    span.style.cssText = `
+      display: inline-block;
+      margin-right: 6px;
+      font-size: 15px;
+      vertical-align: -1px;
+      color: ${checked ? "#1a7f37" : "#57606a"};
+      font-weight: 700;
+    `;
     cb.replaceWith(span);
   });
-  wrap.querySelectorAll("code").forEach((c) => {
-    if (c.parentElement.tagName !== "PRE") {
-      c.style.cssText = "background:#f6f8fa;padding:2px 6px;border-radius:4px;font-family:'SF Mono',Menlo,monospace;font-size:12px;";
-    }
+
+  // Pour l'export, on enlève la limite de hauteur du body markdown
+  card.querySelectorAll(".issue-body").forEach((b) => {
+    b.style.maxHeight = "none";
+    b.style.overflow = "visible";
   });
-  wrap.querySelectorAll("pre").forEach((p) => {
-    p.style.cssText = "background:#0d1117;color:#e6edf3;padding:12px;border-radius:6px;overflow-x:auto;font-family:'SF Mono',Menlo,monospace;font-size:12px;margin:8px 0;";
-  });
-  wrap.querySelectorAll("blockquote").forEach((b) => {
-    b.style.cssText = "border-left:3px solid #d0d7de;padding-left:12px;color:#586069;margin:8px 0;";
-  });
-  return wrap.innerHTML;
+
+  // Petit footer discret avec date d'export
+  const footer = document.createElement("div");
+  footer.style.cssText = `
+    margin-top: 10px;
+    font-size: 10px;
+    color: #959da5;
+    text-align: right;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  `;
+  footer.textContent = `Exporté le ${new Date().toLocaleDateString("fr-FR")}`;
+  card.appendChild(footer);
+
+  wrap.appendChild(card);
+  return wrap;
 }
 
 function escHtml(s) {

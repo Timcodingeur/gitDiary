@@ -96,6 +96,7 @@ export function createIssuesCards(issues) {
 function buildIssueCard(issue) {
   const card = document.createElement("article");
   card.className = `issue-card issue-card-${issue.state}`;
+  card.dataset.issueNumber = String(issue.number);
 
   const labels = (issue.labels || []).map(labelChip).join("");
   const assignees = (issue.assignees || []).map((a) => avatar(a, 22)).join("");
