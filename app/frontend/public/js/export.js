@@ -183,6 +183,7 @@ function buildPrintableCard(issue, width = 800) {
     padding: 16px;
     background: #ffffff;
     box-sizing: border-box;
+    overflow: visible;
   `;
 
   // Trouver la carte affichée et la cloner (les CSS de style.css s'appliquent au clone)
@@ -192,28 +193,53 @@ function buildPrintableCard(issue, width = 800) {
   let card;
   if (original) {
     card = original.cloneNode(true);
-    card.style.width = `${width - 32}px`;
-    card.style.maxWidth = "none";
+    card.style.cssText += `
+      width: 100%;
+      max-width: none;
+      min-width: 0;
+      box-sizing: border-box;
+      margin: 0;
+    `;
   } else {
     card = document.createElement("div");
     card.className = `issue-card issue-card-${issue.state}`;
     card.textContent = issue.title || "(sans titre)";
   }
 
-  // Remplace les <input type=checkbox> (mal rendus par html2canvas) par des box Unicode propres
+  // Remplace les <input type=checkbox> par de vraies cases visuelles dessinées en CSS.
   card.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
-    const span = document.createElement("span");
     const checked = cb.checked;
-    span.textContent = checked ? "☑" : "☐";
-    span.style.cssText = `
+    const box = document.createElement("span");
+    box.style.cssText = `
       display: inline-block;
-      margin-right: 6px;
-      font-size: 15px;
-      vertical-align: -1px;
-      color: ${checked ? "#1a7f37" : "#57606a"};
-      font-weight: 700;
+      width: 14px;
+      height: 14px;
+      border: 2px solid ${checked ? "#1a7f37" : "#8c959f"};
+      border-radius: 3px;
+      background: ${checked ? "#1a7f37" : "#ffffff"};
+      vertical-align: -3px;
+      margin-right: 8px;
+      box-sizing: border-box;
+      text-align: center;
+      line-height: 10px;
+      font-size: 11px;
+      font-weight: 900;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     `;
-    cb.replaceWith(span);
+    if (checked) box.textContent = "✓";
+    cb.replaceWith(box);
+  });
+
+  // Empêche tout débordement horizontal du contenu markdown (pre/code/img)
+  card.querySelectorAll("pre, code").forEach((el) => {
+    el.style.whiteSpace = "pre-wrap";
+    el.style.wordBreak = "break-word";
+    el.style.overflow = "visible";
+  });
+  card.querySelectorAll("img").forEach((img) => {
+    img.style.maxWidth = "100%";
+    img.style.height = "auto";
   });
 
   // Pour l'export, on enlève la limite de hauteur du body markdown
